@@ -88,3 +88,24 @@ npm run dev
 ## Related Repos
 
 - **Steve-v2.0-NP-Redesign** — NP Admin (fleet, compliance, scheduling, recruitment pipeline, training, settings) — owned by Garry
+
+---
+
+## Future Merge Plan
+
+This repo and [Steve-v2.0-NP-Redesign](https://github.com/Deliver-Different-Testing/Steve-v2.0-NP-Redesign) are being developed separately for parallel workstreams but **will be merged into a single unified app** in the future.
+
+| Repo | Developer | Scope | Merge Role |
+|---|---|---|---|
+| **Steve-v2.0-NP-Redesign** | Garry | NP Admin — fleet, compliance, scheduling, recruitment pipeline, training, settings, marketplace | Becomes the **admin tile** in the merged app |
+| **courier-portal** (this repo) | Loc | Courier self-service + applicant recruitment | Becomes the **portal tile** in the merged app |
+
+**Merge approach:**
+1. This repo's Portal/ controllers + pages merge into Steve-v2.0's `web-portal` or `web-unified/pages/portal/`
+2. This repo's Applicant/ controllers + step components merge into the applicant flow
+3. Shared entities (Quiz, DocumentType, PortalStep) exist in both — deduplicate keeping Steve-v2.0's version
+4. `FileStorageService` + `DocumentScanController` are shared — keep one copy
+5. Single `Program.cs` registers all services from both projects
+6. Database migrations from both repos run on the same Despatch DB (no conflicts — different table names)
+
+**Until merge:** This repo is independently deployable. It calls Steve-v2.0's NP API for any admin data it needs (e.g. fleet lists, compliance profiles).
