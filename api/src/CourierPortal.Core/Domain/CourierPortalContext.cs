@@ -42,6 +42,19 @@ public partial class CourierPortalContext : DbContext
     public DbSet<TenantSettings> TenantSettings => Set<TenantSettings>();
     public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
 
+    // NP Redesign entities
+    public DbSet<Agent> Agents => Set<Agent>();
+    public DbSet<NpCourier> NpCouriers => Set<NpCourier>();
+    public DbSet<NpUser> NpUsers => Set<NpUser>();
+    public DbSet<NpFeatureConfig> NpFeatureConfigs => Set<NpFeatureConfig>();
+    public DbSet<ProspectAgent> ProspectAgents => Set<ProspectAgent>();
+    public DbSet<CourierDocumentType> CourierDocumentTypes => Set<CourierDocumentType>();
+    public DbSet<CourierDocument> CourierDocuments => Set<CourierDocument>();
+
+    // Training
+    public DbSet<TrainingItem> TrainingItems => Set<TrainingItem>();
+    public DbSet<TrainingCompletion> TrainingCompletions => Set<TrainingCompletion>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);

@@ -17,6 +17,9 @@ using CourierPortal.Core.Services.Portal;
 // Feature Services
 using CourierPortal.Core.Services;
 
+// Interfaces
+using CourierPortal.Core.Interfaces;
+
 // Infrastructure
 using CourierPortal.Infrastructure.Models;
 using CourierPortal.Infrastructure.Repositories;
@@ -89,6 +92,16 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<ApiBehaviorOptions>(options =>
     options.SuppressModelStateInvalidFilter = true);
 
+// ── Accounts API HttpClient ──
+builder.Services.AddHttpClient("AccountsApi", client =>
+{
+    var baseUrl = builder.Configuration["AccountsApi:BaseUrl"];
+    if (!string.IsNullOrEmpty(baseUrl))
+        client.BaseAddress = new Uri(baseUrl.TrimEnd('/') + "/");
+    client.DefaultRequestHeaders.Add("Accept", "application/json");
+    client.Timeout = TimeSpan.FromSeconds(30);
+});
+
 // ── Connection Strings ──
 builder.Services.AddSingleton<IConnectionStringManager, ConnectionStringManager>();
 
@@ -104,6 +117,12 @@ builder.Services.AddDbContext<MasterContext>(x =>
     x.UseLoggerFactory(LoggerFactory.Create(c => c.AddDebug()));
 #endif
 });
+
+// ── CourierPortalContext (NP Redesign entities) ──
+builder.Services.AddDbContext<CourierPortalContext>(options =>
+    options.UseSqlServer(
+        Environment.GetEnvironmentVariable("MasterSQLConnection") ?? "Server=(localdb)\\mssqllocaldb;Database=dummy;Trusted_Connection=True;"
+    ));
 
 // ── DespatchContext (multi-tenant) ──
 builder.Services.AddDbContextFactory<DespatchContext>(options =>
@@ -176,29 +195,24 @@ builder.Services.AddSession(options =>
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Courier", p => p.RequireClaim("AccountType", AccountType.Courier.ToString()))
     .AddPolicy("Applicant", p => p.RequireClaim("AccountType", AccountType.Applicant.ToString()))
-    .AddPolicy("NpAccess", p => p.RequireAuthenticatedUser()); // TODO: refine NpAccess policy
+    .AddPolicy("NpAccess", p => p.RequireAuthenticatedUser());
 
 // ── FluentValidation ──
 builder.Services.AddFluentValidationAutoValidation();
 
 // ═══════════════════════════════════════════════════════════
-// ── NP Redesign Services (replace old Admin services) ──
+// ── NP Redesign Services ──
 // ═══════════════════════════════════════════════════════════
-// TODO: Register NP Redesign service implementations for each interface:
-// builder.Services.AddScoped<IFleetService, FleetServiceImpl>();
-// builder.Services.AddScoped<ISchedulingService, SchedulingServiceImpl>();
-// builder.Services.AddScoped<IMessengerService, MessengerServiceImpl>();
-// builder.Services.AddScoped<IRecruitmentService, RecruitmentServiceImpl>();
-// builder.Services.AddScoped<ITrainingService, TrainingServiceImpl>();
-// builder.Services.AddScoped<IComplianceDashboardService, ComplianceDashboardServiceImpl>();
-// builder.Services.AddScoped<INpSettingsService, NpSettingsServiceImpl>();
-// builder.Services.AddScoped<ICourierImportService, CourierImportServiceImpl>();
-// builder.Services.AddScoped<IAgentImportService, AgentImportServiceImpl>();
-// builder.Services.AddScoped<IUserImportService, UserImportServiceImpl>();
-// builder.Services.AddScoped<IPortalService, PortalServiceImpl>();
-// builder.Services.AddScoped<IDocumentTypeService, DocumentTypeServiceImpl>();
+builder.Services.AddScoped<IFleetService, FleetService>();
+builder.Services.AddScoped<ISchedulingService, SchedulingService>();
+builder.Services.AddScoped<ITrainingService, TrainingService>();
+builder.Services.AddScoped<INpSettingsService, NpSettingsService>();
+builder.Services.AddScoped<ICourierImportService, CourierImportService>();
+builder.Services.AddScoped<IAgentImportService, AgentImportService>();
+builder.Services.AddScoped<IUserImportService, UserImportService>();
+builder.Services.AddScoped<IPortalService, PortalService>();
 
-// ── Feature Services (new, courier-portal specific) ──
+// ── Feature Services (courier-portal specific) ──
 builder.Services.AddScoped<ComplianceService>();
 builder.Services.AddScoped<DocumentTypeService>();
 builder.Services.AddScoped<DriverApprovalService>();
@@ -206,6 +220,9 @@ builder.Services.AddScoped<MessengerService>();
 builder.Services.AddScoped<QuizService>();
 builder.Services.AddScoped<RecruitmentService>();
 builder.Services.AddScoped<RegistrationFieldService>();
+
+// Infringements
+builder.Services.AddScoped<InfringementService>();
 
 // ═══════════════════════════════════════════════════════════
 // ── Portal Services (courier self-service) ──
@@ -216,13 +233,13 @@ builder.Services.AddScoped<PortalAuthService>();
 builder.Services.AddScoped<PortalCourierService>();
 builder.Services.AddScoped<RunRepository>();
 builder.Services.AddScoped<PortalRunService>();
-builder.Services.AddScoped<PortalInvoiceService>();  // TODO: refactor to call Accounts API
+builder.Services.AddScoped<PortalInvoiceService>();
 builder.Services.AddScoped<PortalScheduleService>();
 builder.Services.AddScoped<PortalApplicantService>();
 builder.Services.AddScoped<PortalContractService>();
 builder.Services.AddScoped<PortalLocationService>();
 builder.Services.AddScoped<PortalVehicleService>();
-builder.Services.AddScoped<PortalReportService>();    // TODO: refactor to call Accounts API
+builder.Services.AddScoped<PortalReportService>();
 
 // ── File Storage (S3 + local fallback) ──
 builder.Services.AddSingleton<FileStorageService>();

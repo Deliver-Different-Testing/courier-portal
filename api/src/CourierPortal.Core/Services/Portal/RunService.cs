@@ -1,5 +1,3 @@
-// TODO: RunService references InvoiceUtility which was removed. Extract the needed helper
-// methods (IsCompleted, CanInvoice) locally or call Accounts API.
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -34,8 +32,8 @@ namespace CourierPortal.Core.Services.Portal
             //var groupedPendingRunItems = pendingRunItems.GroupBy(x => x.RunId);
 
             //Filter Runs by status
-            var currentRuns = groupedRunItems.Where(x => x.Any(r => !InvoiceUtility.IsCompleted(r) && !r.Void));
-            var pastRuns = groupedRunItems.Where(x => !x.Any(r => !InvoiceUtility.IsCompleted(r) && !r.Void));
+            var currentRuns = groupedRunItems.Where(x => x.Any(r => !RunUtility.IsCompleted(r) && !r.Void));
+            var pastRuns = groupedRunItems.Where(x => !x.Any(r => !RunUtility.IsCompleted(r) && !r.Void));
 
             var countryCode = await Context.TblSettings.Select(s => s.CountryCode).FirstOrDefaultAsync();
 
@@ -53,8 +51,8 @@ namespace CourierPortal.Core.Services.Portal
 
             if (allowInvoicing)
                 response.Uninvoiced = pastRuns
-                    .Where(r => r.All(x => x.Archived) && r.Any(InvoiceUtility.CanInvoice))
-                    .Select(r => MapRunItemsToRun(tenantTime, countryCode, r.Where(InvoiceUtility.CanInvoice).ToList(), calculateMaster, masterCourierId));
+                    .Where(r => r.All(x => x.Archived) && r.Any(RunUtility.CanInvoice))
+                    .Select(r => MapRunItemsToRun(tenantTime, countryCode, r.Where(RunUtility.CanInvoice).ToList(), calculateMaster, masterCourierId));
             else
                 response.Uninvoiced = new List<RunDto>();
 
