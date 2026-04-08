@@ -32,6 +32,9 @@ using CourierPortal.Infrastructure.Models;
 using CourierPortal.Infrastructure.Repositories;
 using CourierPortal.Infrastructure.Services;
 
+// Middleware
+using CourierPortal.Api.Middleware;
+
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -255,6 +258,9 @@ builder.Services.AddScoped<PortalLocationService>();
 builder.Services.AddScoped<PortalVehicleService>();
 builder.Services.AddScoped<PortalReportService>();
 
+// ── File Storage (S3 + local fallback) ──
+builder.Services.AddSingleton<FileStorageService>();
+
 // ── Portal Validators ──
 builder.Services.AddTransient<IValidator<TokenRequest>, CourierPortal.Core.Validators.Portal.TokenRequestValidator>();
 builder.Services.AddTransient<IValidator<TokenRefreshRequest>, CourierPortal.Core.Validators.Portal.TokenRefreshRequestValidator>();
@@ -294,6 +300,9 @@ app.MapHealthChecks("/healthz", new HealthCheckOptions
         await context.Response.WriteAsJsonAsync(response);
     }
 });
+
+// Global error handling middleware
+app.UseErrorHandling();
 
 var provider = new FileExtensionContentTypeProvider
 {

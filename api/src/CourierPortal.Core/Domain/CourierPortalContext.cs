@@ -34,6 +34,14 @@ public partial class CourierPortalContext : DbContext
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ConversationMessage> ConversationMessages => Set<ConversationMessage>();
 
+    // Portal Steps & Recruitment (from recruitment portal merge)
+    public DbSet<PortalStep> PortalSteps => Set<PortalStep>();
+    public DbSet<ApplicantStepData> ApplicantStepData => Set<ApplicantStepData>();
+    public DbSet<RecruitmentNote> RecruitmentNotes => Set<RecruitmentNote>();
+    public DbSet<RecruitmentStage> RecruitmentStages => Set<RecruitmentStage>();
+    public DbSet<TenantSettings> TenantSettings => Set<TenantSettings>();
+    public DbSet<AdminUser> AdminUsers => Set<AdminUser>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
