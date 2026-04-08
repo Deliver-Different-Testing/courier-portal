@@ -4,16 +4,6 @@ using CourierPortal.Core.Domain;
 using CourierPortal.Core.Domain.Entities;
 using CourierPortal.Core.Domain.Master;
 
-// Admin DTOs
-using CourierPortal.Core.DTOs.Admin.Applicants;
-using CourierPortal.Core.DTOs.Admin.Auth;
-using CourierPortal.Core.DTOs.Admin.Common;
-using CourierPortal.Core.DTOs.Admin.Contracts;
-using CourierPortal.Core.DTOs.Admin.Infringements;
-using CourierPortal.Core.DTOs.Admin.Invoices;
-using CourierPortal.Core.DTOs.Admin.Messages;
-using CourierPortal.Core.DTOs.Admin.Schedules;
-
 // Portal DTOs
 using CourierPortal.Core.DTOs.Portal.Applications;
 using CourierPortal.Core.DTOs.Portal.Auth;
@@ -21,11 +11,11 @@ using CourierPortal.Core.DTOs.Portal.Couriers;
 using CourierPortal.Core.DTOs.Portal.Invoices;
 using CourierPortal.Core.DTOs.Portal.Runs;
 
-// Admin Services
-using CourierPortal.Core.Services.Admin;
-
 // Portal Services
 using CourierPortal.Core.Services.Portal;
+
+// Feature Services
+using CourierPortal.Core.Services;
 
 // Infrastructure
 using CourierPortal.Infrastructure.Models;
@@ -182,67 +172,43 @@ builder.Services.AddSession(options =>
     options.IdleTimeout = TimeSpan.FromMinutes(60 * 24);
 });
 
-// ── Authorization Policies (Portal) ──
+// ── Authorization Policies ──
 builder.Services.AddAuthorizationBuilder()
     .AddPolicy("Courier", p => p.RequireClaim("AccountType", AccountType.Courier.ToString()))
-    .AddPolicy("Applicant", p => p.RequireClaim("AccountType", AccountType.Applicant.ToString()));
+    .AddPolicy("Applicant", p => p.RequireClaim("AccountType", AccountType.Applicant.ToString()))
+    .AddPolicy("NpAccess", p => p.RequireAuthenticatedUser()); // TODO: refine NpAccess policy
 
 // ── FluentValidation ──
 builder.Services.AddFluentValidationAutoValidation();
 
 // ═══════════════════════════════════════════════════════════
-// ── Admin Services (from CourierManager) ──
+// ── NP Redesign Services (replace old Admin services) ──
 // ═══════════════════════════════════════════════════════════
-builder.Services.AddSingleton<AdminAuthService>();
-builder.Services.AddScoped<AdminTimeZoneService>();
-builder.Services.AddScoped<AdminApplicantsService>();
-builder.Services.AddScoped<AdminContractsService>();
-builder.Services.AddScoped<AdminCourierService>();
-builder.Services.AddScoped<InfringementsService>();
-builder.Services.AddScoped<InvoiceLineJobRepository>();
-builder.Services.AddScoped<AdminInvoiceService>();
-builder.Services.AddScoped<InvoiceBatchService>();
-builder.Services.AddScoped<AdminLocationService>();
-builder.Services.AddScoped<AdminVehicleService>();
-builder.Services.AddScoped<FleetService>();
-builder.Services.AddScoped<AdminScheduleService>();
-builder.Services.AddScoped<MessageService>();
-builder.Services.AddScoped<AdminReportsService>();
-builder.Services.AddScoped<OpenforceService>();
-builder.Services.AddScoped<DeductionService>();
-builder.Services.AddScoped<SettingsService>();
+// TODO: Register NP Redesign service implementations for each interface:
+// builder.Services.AddScoped<IFleetService, FleetServiceImpl>();
+// builder.Services.AddScoped<ISchedulingService, SchedulingServiceImpl>();
+// builder.Services.AddScoped<IMessengerService, MessengerServiceImpl>();
+// builder.Services.AddScoped<IRecruitmentService, RecruitmentServiceImpl>();
+// builder.Services.AddScoped<ITrainingService, TrainingServiceImpl>();
+// builder.Services.AddScoped<IComplianceDashboardService, ComplianceDashboardServiceImpl>();
+// builder.Services.AddScoped<INpSettingsService, NpSettingsServiceImpl>();
+// builder.Services.AddScoped<ICourierImportService, CourierImportServiceImpl>();
+// builder.Services.AddScoped<IAgentImportService, AgentImportServiceImpl>();
+// builder.Services.AddScoped<IUserImportService, UserImportServiceImpl>();
+// builder.Services.AddScoped<IPortalService, PortalServiceImpl>();
+// builder.Services.AddScoped<IDocumentTypeService, DocumentTypeServiceImpl>();
 
-// ── Admin Validators ──
-builder.Services.AddTransient<IValidator<AddRemoveInvoiceBatchRequest>, CourierPortal.Core.Validators.Admin.AddRemoveInvoiceBatchRequestValidator>();
-builder.Services.AddTransient<IValidator<ApplicantDocumentCreateRequest>, CourierPortal.Core.Validators.Admin.ApplicantDocumentCreateRequestValidator>();
-builder.Services.AddTransient<IValidator<ApplicantDeleteRequest>, CourierPortal.Core.Validators.Admin.ApplicantDeleteRequestValidator>();
-builder.Services.AddTransient<IValidator<ApplicantRejectRequest>, CourierPortal.Core.Validators.Admin.ApplicantRejectRequestValidator>();
-builder.Services.AddTransient<IValidator<ApplicantApproveRequest>, CourierPortal.Core.Validators.Admin.ApplicantApproveRequestValidator>();
-builder.Services.AddTransient<IValidator<ApplicantPasswordResetRequest>, CourierPortal.Core.Validators.Admin.ApplicantPasswordResetRequestValidator>();
-builder.Services.AddTransient<IValidator<ContractCreateRequest>, CourierPortal.Core.Validators.Admin.ContractCreateRequestValidator>();
-builder.Services.AddTransient<IValidator<CourierPortalAccessValidationRequest>, CourierPortal.Core.Validators.Admin.CourierPortalAccessValidationRequestValidator>();
-builder.Services.AddTransient<IValidator<CouriersByResponseStatusRequest>, CourierPortal.Core.Validators.Admin.CouriersByResponseStatusRequestValidator>();
-builder.Services.AddTransient<IValidator<CreateMessageDto>, CourierPortal.Core.Validators.Admin.CreateMessageDtoValidator>();
-builder.Services.AddTransient<IValidator<CreateMessagesRequest>, CourierPortal.Core.Validators.Admin.CreateMessagesRequestValidator>();
-builder.Services.AddTransient<IValidator<CourierMessagesRequest>, CourierPortal.Core.Validators.Admin.CourierMessagesRequestValidator>();
-builder.Services.AddTransient<IValidator<InfringementCreateRequest>, CourierPortal.Core.Validators.Admin.InfringementCreateRequestValidator>();
-builder.Services.AddTransient<IValidator<InfringementCancelRequest>, CourierPortal.Core.Validators.Admin.InfringementCancelRequestValidator>();
-builder.Services.AddTransient<IValidator<InfringementCategoryCreateRequest>, CourierPortal.Core.Validators.Admin.InfringementCategoryCreateRequestValidator>();
-builder.Services.AddTransient<IValidator<InfringementCategoryUpdateRequest>, CourierPortal.Core.Validators.Admin.InfringementCategoryUpdateRequestValidator>();
-builder.Services.AddTransient<IValidator<InfringementCategoryLinkCreateRequest>, CourierPortal.Core.Validators.Admin.InfringementCategoryLinkCreateRequestValidator>();
-builder.Services.AddTransient<IValidator<InfringementCategoryLinkUpdateRequest>, CourierPortal.Core.Validators.Admin.InfringementCategoryLinkUpdateRequestValidator>();
-builder.Services.AddTransient<IValidator<IdentifierRequest>, CourierPortal.Core.Validators.Admin.IdentifierRequestValidator>();
-builder.Services.AddTransient<IValidator<InvoiceBatchRequest>, CourierPortal.Core.Validators.Admin.InvoiceBatchRequestValidator>();
-builder.Services.AddTransient<IValidator<NotificationsRequest>, CourierPortal.Core.Validators.Admin.NotificationsRequestValidator>();
-builder.Services.AddTransient<IValidator<ScheduleResponseStatusUpdateRequest>, CourierPortal.Core.Validators.Admin.ScheduleResponseStatusUpdateRequestValidator>();
-builder.Services.AddTransient<IValidator<SchedulesCreateRequest>, CourierPortal.Core.Validators.Admin.SchedulesCreateRequestValidator>();
-builder.Services.AddTransient<IValidator<TimeSlotCreateRequest>, CourierPortal.Core.Validators.Admin.TimeSlotCreateRequestValidator>();
-builder.Services.AddTransient<IValidator<TimeSlotUpdateRequest>, CourierPortal.Core.Validators.Admin.TimeSlotUpdateRequestValidator>();
-builder.Services.AddTransient<IValidator<ScheduleCopyRequest>, CourierPortal.Core.Validators.Admin.ScheduleCopyRequestValidator>();
-builder.Services.AddTransient<IValidator<SearchRequest>, CourierPortal.Core.Validators.Admin.SearchRequestValidator>();
+// ── Feature Services (new, courier-portal specific) ──
+builder.Services.AddScoped<ComplianceService>();
+builder.Services.AddScoped<DocumentTypeService>();
+builder.Services.AddScoped<DriverApprovalService>();
+builder.Services.AddScoped<MessengerService>();
+builder.Services.AddScoped<QuizService>();
+builder.Services.AddScoped<RecruitmentService>();
+builder.Services.AddScoped<RegistrationFieldService>();
 
 // ═══════════════════════════════════════════════════════════
-// ── Portal Services (from CourierPortal) ──
+// ── Portal Services (courier self-service) ──
 // ═══════════════════════════════════════════════════════════
 builder.Services.AddScoped<PortalTimeZoneService>();
 builder.Services.AddScoped<EmailService>();
@@ -250,13 +216,13 @@ builder.Services.AddScoped<PortalAuthService>();
 builder.Services.AddScoped<PortalCourierService>();
 builder.Services.AddScoped<RunRepository>();
 builder.Services.AddScoped<PortalRunService>();
-builder.Services.AddScoped<PortalInvoiceService>();
+builder.Services.AddScoped<PortalInvoiceService>();  // TODO: refactor to call Accounts API
 builder.Services.AddScoped<PortalScheduleService>();
 builder.Services.AddScoped<PortalApplicantService>();
 builder.Services.AddScoped<PortalContractService>();
 builder.Services.AddScoped<PortalLocationService>();
 builder.Services.AddScoped<PortalVehicleService>();
-builder.Services.AddScoped<PortalReportService>();
+builder.Services.AddScoped<PortalReportService>();    // TODO: refactor to call Accounts API
 
 // ── File Storage (S3 + local fallback) ──
 builder.Services.AddSingleton<FileStorageService>();

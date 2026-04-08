@@ -1,3 +1,6 @@
+// TODO: SHARED SERVICE — This service directly accesses CourierInvoice entities that have been
+// removed from courier-portal (now handled by Accounts app). Refactor to call Accounts API
+// via HttpClient instead of direct DB access. Until then, this service will not compile.
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics.Metrics;

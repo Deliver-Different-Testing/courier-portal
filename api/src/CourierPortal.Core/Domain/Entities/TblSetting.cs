@@ -327,7 +327,8 @@ public partial class TblSetting
 
     public string DirectDebitBankAuthorisationCode { get; set; }
 
-    public virtual PaymentTerm CourierInvoiceBatchPaymentTerm { get; set; }
+// REMOVED: Accounts handles invoice batches
+//     public virtual PaymentTerm CourierInvoiceBatchPaymentTerm { get; set; }
 
     public virtual PaymentTerm PaymentTerm { get; set; }
 }

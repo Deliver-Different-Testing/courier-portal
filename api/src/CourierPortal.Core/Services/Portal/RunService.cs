@@ -1,3 +1,5 @@
+// TODO: RunService references InvoiceUtility which was removed. Extract the needed helper
+// methods (IsCompleted, CanInvoice) locally or call Accounts API.
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;

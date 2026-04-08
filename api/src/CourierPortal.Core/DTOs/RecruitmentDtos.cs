@@ -1,8 +1,51 @@
 namespace CourierPortal.Core.DTOs;
 
-public record JobPostingDto(int Id, string Title, string? Description, string? Location, string? VehicleType, decimal? PayRate, string Status, DateTime? PostedAt, DateTime? ClosesAt, int ApplicationCount);
-public record CreateJobPostingDto(string Title, string? Description, string? Location, string? VehicleType, decimal? PayRate, string Status, DateTime? ClosesAt);
-public record UpdateJobPostingDto(string Title, string? Description, string? Location, string? VehicleType, decimal? PayRate, string Status, DateTime? ClosesAt);
-public record JobApplicationDto(int Id, int PostingId, int ApplicantId, string Status, DateTime AppliedAt);
-public record CreateJobApplicationDto(int PostingId, int ApplicantId);
-public record UpdateJobApplicationStatusDto(string Status);
+public record RecruitmentStageConfigDto(
+    int Id,
+    int TenantId,
+    string StageName,
+    int SortOrder,
+    bool Enabled,
+    bool Mandatory,
+    string? Description,
+    DateTime CreatedDate
+);
+
+public record CreateStageConfigDto(
+    string StageName,
+    int SortOrder,
+    bool Enabled,
+    bool Mandatory,
+    string? Description
+);
+
+public record UpdateStageConfigDto(
+    string? StageName,
+    int? SortOrder,
+    bool? Enabled,
+    bool? Mandatory,
+    string? Description
+);
+
+public record RecruitmentPipelineSummaryDto(
+    string StageName,
+    int Count
+);
+
+public record ContractDto(
+    int Id,
+    int TenantId,
+    string Name,
+    string FileName,
+    string MimeType,
+    long FileSize,
+    DateTime UploadedDate,
+    string? UploadedBy,
+    bool IsActive,
+    int Version,
+    DateTime CreatedDate
+);
+
+public record CreateContractDto(
+    string Name
+);

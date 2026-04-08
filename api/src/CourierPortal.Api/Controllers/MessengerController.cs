@@ -1,51 +1,56 @@
-using CourierPortal.Core.DTOs;
 using CourierPortal.Core.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 
 namespace CourierPortal.Api.Controllers;
 
 [ApiController]
-[Route("api/messenger")]
+[Route("api/v1/np/[controller]")]
 public class MessengerController : ControllerBase
 {
-    private readonly IMessengerService _service;
+    private readonly IMessengerService _messenger;
 
-    public MessengerController(IMessengerService service) => _service = service;
+    public MessengerController(IMessengerService messenger) => _messenger = messenger;
 
-    [HttpGet("conversations")]
-    public async Task<IActionResult> GetConversations([FromQuery] int? courierId = null, [FromQuery] string? status = null)
-        => Ok(new { data = await _service.GetConversationsAsync(courierId, status) });
-
-    [HttpGet("conversations/{id}")]
-    public async Task<IActionResult> GetConversation(int id)
+    /// <summary>Get recent conversations (last 5 days), grouped by courier.</summary>
+    [HttpGet]
+    public async Task<IActionResult> GetRecent()
     {
-        var result = await _service.GetConversationByIdAsync(id);
-        return result is null ? NotFound(new { error = "Conversation not found" }) : Ok(new { data = result });
+        var result = await _messenger.GetRecentAsync();
+        return Ok(result);
     }
 
-    [HttpPost("conversations")]
-    public async Task<IActionResult> CreateConversation([FromBody] CreateConversationDto dto)
-        => Ok(new { data = await _service.CreateConversationAsync(dto) });
-
-    [HttpPut("conversations/{id}/close")]
-    public async Task<IActionResult> CloseConversation(int id)
+    /// <summary>Get message history for a specific courier by code.</summary>
+    [HttpGet("couriers/{code}")]
+    public async Task<IActionResult> GetCourierMessages(string code)
     {
-        var closed = await _service.CloseConversationAsync(id);
-        return closed ? Ok(new { success = true }) : NotFound(new { error = "Conversation not found" });
+        try
+        {
+            var result = await _messenger.GetCourierMessagesAsync(code);
+            return Ok(result);
+        }
+        catch (KeyNotFoundException ex)
+        {
+            return NotFound(new { message = ex.Message });
+        }
     }
 
-    [HttpGet("conversations/{conversationId}/messages")]
-    public async Task<IActionResult> GetMessages(int conversationId)
-        => Ok(new { data = await _service.GetMessagesAsync(conversationId) });
-
-    [HttpPost("conversations/{conversationId}/messages")]
-    public async Task<IActionResult> SendMessage(int conversationId, [FromBody] SendMessageDto dto)
-        => Ok(new { data = await _service.SendMessageAsync(conversationId, dto) });
-
-    [HttpPut("conversations/{conversationId}/read")]
-    public async Task<IActionResult> MarkRead(int conversationId, [FromQuery] string readerType = "admin")
+    /// <summary>Send messages to couriers. Supports bulk send.</summary>
+    [HttpPost]
+    public async Task<IActionResult> CreateMessages([FromBody] CreateMessagesBody body)
     {
-        await _service.MarkMessagesReadAsync(conversationId, readerType);
-        return Ok(new { success = true });
+        try
+        {
+            await _messenger.CreateMessagesAsync(body.Messages);
+            return Ok(new { success = true });
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(new { message = ex.Message });
+        }
     }
+}
+
+public class CreateMessagesBody
+{
+    public List<CreateMessageRequest> Messages { get; set; } = [];
 }

@@ -275,13 +275,14 @@ public partial class TucCourier
 
     public virtual ICollection<CourierAvailability> CourierAvailabilities { get; set; } = new List<CourierAvailability>();
 
-    public virtual ICollection<CourierDeductionRecurring> CourierDeductionRecurrings { get; set; } = new List<CourierDeductionRecurring>();
+// REMOVED: handled by Accounts
+//     public virtual ICollection<CourierDeductionRecurring> CourierDeductionRecurrings { get; set; } = new List<CourierDeductionRecurring>();
 
-    public virtual ICollection<CourierDeduction> CourierDeductions { get; set; } = new List<CourierDeduction>();
+//     public virtual ICollection<CourierDeduction> CourierDeductions { get; set; } = new List<CourierDeduction>();
 
     public virtual TucCourierFleet CourierFleet { get; set; }
 
-    public virtual ICollection<CourierInvoice> CourierInvoices { get; set; } = new List<CourierInvoice>();
+//     public virtual ICollection<CourierInvoice> CourierInvoices { get; set; } = new List<CourierInvoice>();
 
     public virtual TblCourierLogInOut CourierLogInOut { get; set; }
 

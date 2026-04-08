@@ -24,27 +24,29 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<CourierContract> CourierContracts { get; set; }
 
-    public virtual DbSet<CourierDeduction> CourierDeductions { get; set; }
+// REMOVED: handled by Accounts app
+//     public virtual DbSet<CourierDeduction> CourierDeductions { get; set; }
 
-    public virtual DbSet<CourierDeductionLine> CourierDeductionLines { get; set; }
+//     public virtual DbSet<CourierDeductionLine> CourierDeductionLines { get; set; }
 
-    public virtual DbSet<CourierDeductionRecurring> CourierDeductionRecurrings { get; set; }
+//     public virtual DbSet<CourierDeductionRecurring> CourierDeductionRecurrings { get; set; }
 
-    public virtual DbSet<CourierDeductionRecurringLine> CourierDeductionRecurringLines { get; set; }
+//     public virtual DbSet<CourierDeductionRecurringLine> CourierDeductionRecurringLines { get; set; }
 
-    public virtual DbSet<CourierDeductionType> CourierDeductionTypes { get; set; }
+//     public virtual DbSet<CourierDeductionType> CourierDeductionTypes { get; set; }
 
-    public virtual DbSet<CourierInvoice> CourierInvoices { get; set; }
+// REMOVED: handled by Accounts app
+//     public virtual DbSet<CourierInvoice> CourierInvoices { get; set; }
 
-    public virtual DbSet<CourierInvoiceBatch> CourierInvoiceBatches { get; set; }
+//     public virtual DbSet<CourierInvoiceBatch> CourierInvoiceBatches { get; set; }
 
-    public virtual DbSet<CourierInvoiceBatchItem> CourierInvoiceBatchItems { get; set; }
+//     public virtual DbSet<CourierInvoiceBatchItem> CourierInvoiceBatchItems { get; set; }
 
-    public virtual DbSet<CourierInvoiceBatchStatus> CourierInvoiceBatchStatuses { get; set; }
+//     public virtual DbSet<CourierInvoiceBatchStatus> CourierInvoiceBatchStatuses { get; set; }
 
-    public virtual DbSet<CourierInvoiceLine> CourierInvoiceLines { get; set; }
+//     public virtual DbSet<CourierInvoiceLine> CourierInvoiceLines { get; set; }
 
-    public virtual DbSet<CourierInvoiceLineJob> CourierInvoiceLineJobs { get; set; }
+//     public virtual DbSet<CourierInvoiceLineJob> CourierInvoiceLineJobs { get; set; }
 
     public virtual DbSet<CourierSchedule> CourierSchedules { get; set; }
 
@@ -86,7 +88,7 @@ public partial class DespatchContext : DbContext
 
     public virtual DbSet<CourierAvailabilityExclude> CourierAvailabilityExcludes { get; set; }
 
-    public virtual DbSet<CourierInvoiceLineJobMaster> CourierInvoiceLineJobMasters { get; set; }
+//     public virtual DbSet<CourierInvoiceLineJobMaster> CourierInvoiceLineJobMasters { get; set; }
 
     public virtual DbSet<TblBuyerTaxInvoiceControl> TblBuyerTaxInvoiceControls { get; set; }
 

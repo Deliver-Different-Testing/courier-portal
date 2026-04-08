@@ -11,6 +11,9 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Serilog;
 
+// SHARED: This controller should call the Accounts API for report data.
+// Portal self-service view - courier sees their own reports.
+// TODO: Replace direct DB access with HTTP calls to Accounts API.
 namespace CourierPortal.Api.Controllers.Portal
 {
     [Route("api/portal/[controller]")]

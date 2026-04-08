@@ -492,3 +492,156 @@ api/src/CourierPortal.Core/DTOs/Admin/Openforce/       (entire folder)
 - **Admin/CouriersController coupling:** This controller currently injects `AdminInvoiceService` and `DeductionService`. These dependencies must be removed or replaced with API calls before deleting the invoice/deduction services.
 - **TucCourier entity:** Widely used across scheduling, messaging, and applicant features. Cannot be removed even though it's duplicated in Accounts. Keep as read-only in courier-portal.
 - **TblSetting entity:** Used by SettingsService for portal configuration. Review whether it overlaps with Accounts settings or is portal-specific before removing.
+
+---
+
+## NP Redesign Rebase — 2026-04-08
+
+### What Was Done
+
+This section documents the re-basing of the courier-portal backend onto the NP Redesign codebase, removing duplication with the Accounts app.
+
+### Step 1: Duplication Analysis
+
+**NP Redesign controllers checked against Accounts app:**
+- None of the 23 NP Redesign controllers duplicate Accounts functionality
+- NP Redesign has NO invoice, deduction, openforce, settlement, or location-listing controllers
+- The NP FleetController has full CRUD + courier assignment (operational), while Accounts FleetsController only has GetAll (financial listing) — these are complementary, not duplicated
+- All duplication with Accounts existed in the OLD Admin/ folder from GitLab, not in NP Redesign
+
+### Step 2: NP Redesign Backend Copied Into Courier-Portal
+
+**23 controllers copied** from `DfrntAgentsPartners.Api/Controllers/`:
+- AgentController, AgentImportController, AgentVehicleRateController
+- ComplianceAutomationController, ComplianceDashboardController
+- ContractController, CourierDocumentController, CourierImportController
+- DocumentTypeController, FleetController, MarketplaceController
+- MessengerController (replaced old version), NpCourierController
+- NpDashboardController, NpReportController, NpSettingsController
+- NpUserController, PortalController, RecruitmentController (replaced old version)
+- RecruitmentSettingsController, SchedulingController, TrainingController, UserImportController
+
+**Models copied** (22 entities → `Domain/Entities/`):
+- Agent, AgentCourierRate, AgentOnboarding, AgentVehicleRate
+- ComplianceAutomationConfig, ComplianceNotification
+- CourierApplicant (NP version), CourierContract, CourierDocument, CourierDocumentAudit
+- CourierDocumentType, CourierMessage, CourierSchedule
+- MarketplacePosting, MarketplaceQuote, NpCourier, NpFeatureConfig, NpUser
+- ProspectAgent, RecruitmentStageConfig, TrainingItem, TucCourierFleet
+
+**DTOs copied** (14 files):
+- AgentDtos, AgentImportDtos, ApplicantDtos, ComplianceDtos, CourierImportDtos
+- DocumentDtos, MarketplaceDtos, MaskedJobDto, MessengerDtos (replaced old)
+- NpCourierDtos, NpDashboardDtos, NpUserDtos, PortalDtos, UserImportDtos
+
+**Interfaces copied** (13):
+- IAgentImportService, IComplianceDashboardService, ICourierImportService
+- IDocumentServices, IFleetService, IMessengerService (replaced old)
+- INpSettingsService, IPortalService, IRecruitmentService (replaced old)
+- ISchedulingService, IServices, ITrainingService, IUserImportService
+
+**Middleware copied** (2):
+- NpAuthorizationMiddleware, NpTierMiddleware
+
+**All namespaces updated** from `DfrntAgentsPartners.*` to `CourierPortal.*`
+
+### Step 3: Accounts Duplicates Removed
+
+**Nothing needed to be removed from NP Redesign** — the duplication was entirely in the old Admin/ folder.
+
+### Step 4: Portal Self-Service Controllers Kept
+
+All Portal/ controllers retained:
+- Portal/ApplicantsController, Portal/AuthController, Portal/BaseController
+- Portal/ContractsController, Portal/CouriersController
+- Portal/InvoicesController (**marked SHARED** — needs Accounts API)
+- Portal/LocationsController, Portal/RecaptchaController
+- Portal/ReportsController (**marked SHARED** — needs Accounts API)
+- Portal/RunsController, Portal/SchedulesController
+- Portal/ValuesController, Portal/VehiclesController
+
+### Step 5: New Feature Controllers Kept
+
+- ComplianceController (existing, courier-portal specific)
+- DocumentScanController (existing)
+- DriverApprovalsController (existing)
+- PortalStepsController (existing)
+- QuizController (existing)
+- RegistrationFieldsController (existing)
+- MessengerController — NP Redesign version preferred and used
+- DocumentTypeController — NP Redesign version preferred, old DocumentTypesController removed
+- RecruitmentController — NP Redesign version preferred
+
+### Step 6: Old GitLab Admin/ Folder Removed
+
+**Deleted entirely:**
+- `Controllers/Admin/` — 16 controllers (ApplicantsController, AuthController, ContractsController, CouriersController, DeductionsController, FleetsController, InfringementsController, InvoicesController, LocationsController, MessagesController, OpenforceController, ReportsController, SchedulesController, SettingsController, ValuesController, VehiclesController)
+- `Services/Admin/` — 18 services (all old GitLab services)
+- `DTOs/Admin/` — All admin DTOs (Applicants, Auth, Common, Contracts, Couriers, Deductions, Fleets, Infringements, Invoices, Locations, Messages, Openforce, Reports, Schedules, Vehicles)
+- `Validators/Admin/` — All admin validators (30+ validator classes)
+- `Utilities/` — DeductionUtility, InvoiceBatchUtility, InvoiceUtility, CourierUtility
+
+### Step 7: Program.cs Updated
+
+- Removed all Admin service registrations (AdminAuthService, AdminApplicantsService, etc.)
+- Removed all Admin validator registrations
+- Removed Admin DTO using statements
+- Added TODO placeholders for NP Redesign service interface registrations
+- Added NpAccess authorization policy placeholder
+- Marked PortalInvoiceService and PortalReportService with TODO for Accounts API refactor
+
+### Step 8: Old Entities Removed
+
+**Deleted from Domain/Entities/ (handled by Accounts):**
+- CourierDeduction, CourierDeductionLine, CourierDeductionRecurring, CourierDeductionRecurringLine, CourierDeductionType
+- CourierInvoice, CourierInvoiceBatch, CourierInvoiceBatchItem, CourierInvoiceBatchStatus
+- CourierInvoiceLine, CourierInvoiceLineJob, CourierInvoiceLineJobMaster
+- TblBuyerTaxInvoiceControl
+
+**Deleted domain folders (financial, handled by Accounts):**
+- Domain/Anz/ (ANZ payment file generation)
+- Domain/Bnz/ (BNZ payroll file generation)
+- Domain/Ird/ (IRD payday filing)
+
+**DespatchContext updated:** DbSets for removed entities commented out with REMOVED markers
+**TucCourier updated:** Navigation properties to removed entities commented out
+**TblSetting updated:** Navigation property to removed PaymentTerm relationship commented out
+
+### Known Compilation Issues (TODO)
+
+1. **Portal/InvoiceService** — References removed CourierInvoice entities and InvoiceUtility. Needs refactoring to call Accounts API via HttpClient.
+2. **Portal/RunService** — References InvoiceUtility.IsCompleted and InvoiceUtility.CanInvoice. Extract these helper methods locally or call Accounts API.
+3. **NP Redesign service implementations** — Interface registrations in Program.cs are TODO placeholders. Need concrete service implementations registered.
+4. **DespatchContext entity configurations** — The OnModelCreating method still contains configuration blocks for removed entities. These should be cleaned up (they're harmless but add noise).
+
+### Architecture After Rebase
+
+```
+courier-portal/
+├── Controllers/
+│   ├── [23 NP Redesign controllers] — Admin operations (fleet, scheduling, compliance, recruitment, etc.)
+│   ├── Portal/ — Courier self-service (auth, runs, schedules, contracts, invoices*, reports*)
+│   ├── ComplianceController — Compliance profiles
+│   ├── DocumentScanController — Document scanning
+│   ├── DriverApprovalsController — Driver approvals
+│   ├── PortalStepsController — Portal step configuration
+│   ├── QuizController — Training quizzes
+│   └── RegistrationFieldsController — Registration field config
+├── DTOs/
+│   ├── [14 NP Redesign DTOs] — Agent, courier, compliance, recruitment, etc.
+│   ├── Portal/ — Self-service DTOs (runs, schedules, invoices, etc.)
+│   └── [Feature DTOs] — Quiz, compliance, driver approval, registration
+├── Domain/Entities/
+│   ├── [22 NP Redesign models] — Agent, NpCourier, marketplace, training, etc.
+│   └── [Shared entities] — TucCourier, TucCourierFleet, schedules, applicants, etc.
+├── Interfaces/
+│   ├── [13 NP Redesign interfaces] — Fleet, scheduling, recruitment, etc.
+│   └── [Feature interfaces] — Compliance, quiz, driver approval, etc.
+└── Services/
+    ├── Portal/ — Self-service services
+    ├── NpRedesign/ — ComplianceAutomationService
+    └── [Feature services] — Compliance, quiz, recruitment, etc.
+```
+
+**Accounts app handles:** Invoicing, settlements, deductions, openforce/1099, payments, statements, direct debits, contractor financial CRUD, fleet listing (GetAll only)
+**Courier-portal handles:** Fleet CRUD + courier assignment, scheduling, compliance, recruitment, training, documents, messenger, marketplace, portal self-service
