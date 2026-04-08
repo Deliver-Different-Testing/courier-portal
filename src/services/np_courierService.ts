@@ -1,45 +1,79 @@
-import { couriers } from './np_mockData';
+import api from './np_api';
 import type { Courier } from '@/types';
 
 export const courierService = {
-  getAll: (): Courier[] => couriers,
-
-  getById: (id: number): Courier | undefined => couriers.find(c => c.id === id),
-
-  getActive: (): Courier[] => couriers.filter(c => c.status === 'active'),
-
-  getMasters: (): Courier[] => couriers.filter(c => c.type === 'Master'),
-
-  getSubsForMaster: (masterId: number): Courier[] => couriers.filter(c => c.master === masterId),
-
-  search: (query: string, filters?: { status?: string; location?: string; vehicle?: string }): Courier[] => {
-    let result = [...couriers];
-    if (query) {
-      const q = query.toLowerCase();
-      result = result.filter(c =>
-        `${c.firstName} ${c.surName} ${c.code}`.toLowerCase().includes(q)
-      );
+  async getAll(): Promise<Courier[]> {
+    try {
+      const { data } = await api.get<Courier[]>('/couriers');
+      return data;
+    } catch (e) {
+      console.error('courierService.getAll failed:', e);
+      return [];
     }
-    if (filters?.status && filters.status !== 'All Status') {
-      result = result.filter(c => c.status === filters.status!.toLowerCase());
-    }
-    if (filters?.location && filters.location !== 'All Locations') {
-      result = result.filter(c => c.location === filters.location);
-    }
-    if (filters?.vehicle && filters.vehicle !== 'All Vehicles') {
-      result = result.filter(c => c.vehicle === filters.vehicle);
-    }
-    return result;
   },
 
-  getPortalLinks: () => {
-    return couriers
-      .filter(c => c.status === 'active')
-      .map(c => ({
-        courierId: c.id,
-        code: c.code,
-        name: `${c.firstName} ${c.surName}`,
-        url: `https://portal.dfrnt.com/courier/${c.code.toLowerCase()}/${Math.random().toString(36).substr(2, 12)}`,
-      }));
+  async getById(id: number): Promise<Courier | undefined> {
+    try {
+      const { data } = await api.get<Courier>(`/couriers/${id}`);
+      return data;
+    } catch (e) {
+      console.error('courierService.getById failed:', e);
+      return undefined;
+    }
+  },
+
+  async getActive(): Promise<Courier[]> {
+    try {
+      const { data } = await api.get<Courier[]>('/couriers', { params: { status: 'active' } });
+      return data;
+    } catch (e) {
+      console.error('courierService.getActive failed:', e);
+      return [];
+    }
+  },
+
+  async getMasters(): Promise<Courier[]> {
+    try {
+      const { data } = await api.get<Courier[]>('/couriers', { params: { type: 'Master' } });
+      return data;
+    } catch (e) {
+      console.error('courierService.getMasters failed:', e);
+      return [];
+    }
+  },
+
+  async getSubsForMaster(masterId: number): Promise<Courier[]> {
+    try {
+      const { data } = await api.get<Courier[]>(`/couriers`, { params: { masterId } });
+      return data;
+    } catch (e) {
+      console.error('courierService.getSubsForMaster failed:', e);
+      return [];
+    }
+  },
+
+  async search(query: string, filters?: { status?: string; location?: string; vehicle?: string }): Promise<Courier[]> {
+    try {
+      const params: Record<string, string> = {};
+      if (query) params.q = query;
+      if (filters?.status && filters.status !== 'All Status') params.status = filters.status;
+      if (filters?.location && filters.location !== 'All Locations') params.location = filters.location;
+      if (filters?.vehicle && filters.vehicle !== 'All Vehicles') params.vehicle = filters.vehicle;
+      const { data } = await api.get<Courier[]>('/couriers/search', { params });
+      return data;
+    } catch (e) {
+      console.error('courierService.search failed:', e);
+      return [];
+    }
+  },
+
+  async getPortalLinks(): Promise<{ courierId: number; code: string; name: string; url: string }[]> {
+    try {
+      const { data } = await api.get<{ courierId: number; code: string; name: string; url: string }[]>('/couriers/portal-links');
+      return data;
+    } catch (e) {
+      console.error('courierService.getPortalLinks failed:', e);
+      return [];
+    }
   },
 };

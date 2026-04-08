@@ -1,18 +1,31 @@
+import api from './np_api';
+
+export interface AppSettings {
+  name: string;
+  code: string;
+  address: string;
+  phone: string;
+  email: string;
+  coverageAreas: string[];
+  notifications: Record<string, boolean>;
+}
+
 export const settingsService = {
-  getSettings: () => ({
-    name: 'Pacific Express Logistics',
-    code: 'PXL',
-    address: '200 W Adams St, Suite 1500, Chicago, IL 60606',
-    phone: '312-555-1000',
-    email: 'admin@pacificexpress.com',
-    coverageAreas: ['Chicago Downtown', 'Chicago West', 'Chicago North', 'Chicago Loop', 'Dallas Downtown', 'Dallas North', 'Dallas South', 'Dallas East', 'Houston Midtown', 'Houston Galleria', 'Houston Heights'],
-    notifications: {
-      'New job assignments': true,
-      'Job completion alerts': true,
-      'Compliance expiry warnings': true,
-      'Daily summary email': false,
-      'Weekly report email': true,
-      'Courier status changes': true,
-    },
-  }),
+  async getSettings(): Promise<AppSettings> {
+    try {
+      const { data } = await api.get<AppSettings>('/settings');
+      return data;
+    } catch (e) {
+      console.error('settingsService.getSettings failed:', e);
+      return {
+        name: '', code: '', address: '', phone: '', email: '',
+        coverageAreas: [], notifications: {},
+      };
+    }
+  },
+
+  async updateSettings(settings: Partial<AppSettings>): Promise<AppSettings> {
+    const { data } = await api.put<AppSettings>('/settings', settings);
+    return data;
+  },
 };

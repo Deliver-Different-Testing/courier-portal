@@ -1,98 +1,56 @@
+import api from './np_api';
 import type { Courier } from '@/types';
-import { couriers as mockCouriers } from './np_mockData';
 
-const STORAGE_KEY = 'np_driver_approval_overrides';
-
-interface ApprovalOverride {
-  courierId: number;
-  tenantApprovalStatus: Courier['tenantApprovalStatus'];
-  tenantApprovalDate?: string;
-  tenantApprovalNotes?: string;
-  complianceProfileId?: number;
-}
-
-function loadOverrides(): ApprovalOverride[] {
+export async function getAllCouriersWithApproval(): Promise<Courier[]> {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  return [];
+    const { data } = await api.get<Courier[]>('/driver-approvals');
+    return data;
+  } catch (e) {
+    console.error('getAllCouriersWithApproval failed:', e);
+    return [];
+  }
 }
 
-function saveOverrides(overrides: ApprovalOverride[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(overrides));
+export async function getPendingDrivers(): Promise<Courier[]> {
+  try {
+    const { data } = await api.get<Courier[]>('/driver-approvals', { params: { status: 'pending_approval' } });
+    return data;
+  } catch (e) {
+    console.error('getPendingDrivers failed:', e);
+    return [];
+  }
 }
 
-function applyCourierOverrides(courier: Courier): Courier {
-  const overrides = loadOverrides();
-  const override = overrides.find(o => o.courierId === courier.id);
-  if (!override) return courier;
-  return {
-    ...courier,
-    tenantApprovalStatus: override.tenantApprovalStatus,
-    tenantApprovalDate: override.tenantApprovalDate,
-    tenantApprovalNotes: override.tenantApprovalNotes,
-    complianceProfileId: override.complianceProfileId ?? courier.complianceProfileId,
-  };
+export async function getApprovedDrivers(): Promise<Courier[]> {
+  try {
+    const { data } = await api.get<Courier[]>('/driver-approvals', { params: { status: 'approved' } });
+    return data;
+  } catch (e) {
+    console.error('getApprovedDrivers failed:', e);
+    return [];
+  }
 }
 
-export function getAllCouriersWithApproval(): Courier[] {
-  return mockCouriers.map(applyCourierOverrides);
+export async function getPendingCount(): Promise<number> {
+  try {
+    const { data } = await api.get<{ count: number }>('/driver-approvals/pending-count');
+    return data.count;
+  } catch (e) {
+    console.error('getPendingCount failed:', e);
+    return 0;
+  }
 }
 
-export function getPendingDrivers(): Courier[] {
-  return getAllCouriersWithApproval().filter(c => c.tenantApprovalStatus === 'pending_approval');
+export async function flagForApproval(courierId: number, profileId: number): Promise<void> {
+  await api.post(`/driver-approvals/${courierId}/flag`, { profileId });
 }
 
-export function getApprovedDrivers(): Courier[] {
-  return getAllCouriersWithApproval().filter(c => c.tenantApprovalStatus === 'approved');
+export async function approveDriver(courierId: number, notes?: string): Promise<void> {
+  await api.put(`/driver-approvals/${courierId}/approve`, { notes });
 }
 
-export function getPendingCount(): number {
-  return getPendingDrivers().length;
-}
-
-export function flagForApproval(courierId: number, profileId: number): void {
-  const overrides = loadOverrides();
-  const idx = overrides.findIndex(o => o.courierId === courierId);
-  const entry: ApprovalOverride = {
-    courierId,
-    tenantApprovalStatus: 'pending_approval',
-    complianceProfileId: profileId,
-  };
-  if (idx >= 0) overrides[idx] = entry;
-  else overrides.push(entry);
-  saveOverrides(overrides);
-}
-
-export function approveDriver(courierId: number, notes?: string): void {
-  const overrides = loadOverrides();
-  const idx = overrides.findIndex(o => o.courierId === courierId);
-  const existing = idx >= 0 ? overrides[idx] : { courierId, tenantApprovalStatus: 'approved' as const };
-  const entry: ApprovalOverride = {
-    ...existing,
-    tenantApprovalStatus: 'approved',
-    tenantApprovalDate: new Date().toISOString(),
-    tenantApprovalNotes: notes || undefined,
-  };
-  if (idx >= 0) overrides[idx] = entry;
-  else overrides.push(entry);
-  saveOverrides(overrides);
-}
-
-export function rejectDriver(courierId: number, notes: string): void {
-  const overrides = loadOverrides();
-  const idx = overrides.findIndex(o => o.courierId === courierId);
-  const existing = idx >= 0 ? overrides[idx] : { courierId, tenantApprovalStatus: 'rejected' as const };
-  const entry: ApprovalOverride = {
-    ...existing,
-    tenantApprovalStatus: 'rejected',
-    tenantApprovalDate: new Date().toISOString(),
-    tenantApprovalNotes: notes,
-  };
-  if (idx >= 0) overrides[idx] = entry;
-  else overrides.push(entry);
-  saveOverrides(overrides);
+export async function rejectDriver(courierId: number, notes: string): Promise<void> {
+  await api.put(`/driver-approvals/${courierId}/reject`, { notes });
 }
 
 export const driverApprovalService = {

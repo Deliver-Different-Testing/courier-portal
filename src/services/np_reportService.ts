@@ -1,16 +1,30 @@
+import api from './np_api';
+
+export interface ReportData {
+  jobsCompleted: number;
+  onTimePercent: number;
+  revenue: string;
+  dailyVolume: { day: string; value: number }[];
+}
+
 export const reportService = {
-  getData: (_from: string, _to: string) => ({
-    jobsCompleted: 256,
-    onTimePercent: 94.2,
-    revenue: '$12,450',
-    dailyVolume: [
-      { day: 'Mon', value: 42 },
-      { day: 'Tue', value: 38 },
-      { day: 'Wed', value: 51 },
-      { day: 'Thu', value: 45 },
-      { day: 'Fri', value: 34 },
-      { day: 'Sat', value: 18 },
-      { day: 'Sun', value: 28 },
-    ],
-  }),
+  async getData(from: string, to: string): Promise<ReportData> {
+    try {
+      const { data } = await api.get<ReportData>('/reports/no-shows', { params: { from, to } });
+      return data;
+    } catch (e) {
+      console.error('reportService.getData failed:', e);
+      return { jobsCompleted: 0, onTimePercent: 0, revenue: '$0', dailyVolume: [] };
+    }
+  },
+
+  async getSustainability(from: string, to: string): Promise<any> {
+    try {
+      const { data } = await api.get('/reports/sustainability', { params: { from, to } });
+      return data;
+    } catch (e) {
+      console.error('reportService.getSustainability failed:', e);
+      return null;
+    }
+  },
 };
