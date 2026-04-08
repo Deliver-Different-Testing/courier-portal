@@ -175,7 +175,52 @@ Authorization policies:
 | `PortalScheduleService` | DespatchContext | Courier schedule views |
 | `PortalAuthService` | DespatchContext | JWT token issuance |
 
-## 5. Frontend Notes
+## 5. Applicant App (Recruitment Portal)
+
+The applicant-facing recruitment flow from `dfrnt-recruitment` (apply.urgent.co.nz) is integrated as the third section of this app.
+
+### Pages
+| Page | Path | Purpose |
+|---|---|---|
+| `ApplicantPortal.tsx` | `src/pages/applicant/` | Multi-step application flow (production version from Railway) |
+| `AdminSettings.tsx` | `src/pages/np/` | Recruitment admin configuration |
+| `DocumentManagement.tsx` | `src/pages/np/` | Document type CRUD with verification UI |
+| `FlowBuilder.tsx` | `src/pages/np/` | Drag-and-drop applicant step configuration |
+| `QuizBuilder.tsx` | `src/pages/np/` | Training quiz creation |
+| `RecruitmentPipeline.tsx` | `src/pages/np/` | Kanban applicant pipeline |
+
+### Step Components (`src/components/steps/`)
+- `DetailsStep` — Personal info + contact details
+- `DriverLicenseStep` — License upload + AI scan (Textract)
+- `VehicleStep` — Vehicle details + photos
+- `DocumentUploadStep` — Required document uploads
+- `GenericDocumentStep` — Configurable document type upload
+- `QuizStep` — Training quiz with auto-grading
+- `ReviewStep` — Final review before submission
+- `AiScanResult` — Textract OCR results display
+
+### Backend (`Controllers/Applicant/`)
+| Controller | Route | Purpose |
+|---|---|---|
+| `ApplicantController` | `/api/applicants` | Register, verify email, update profile, upload documents, check status |
+| `UsersController` | `/api/users` | Admin user management for recruitment |
+
+### API Client
+- `src/lib/recruitmentApi.ts` — Applicant-facing fetch-based API client (token in localStorage)
+- `src/lib/stepTypes.ts` — Step type definitions and configuration
+
+### Key Features
+- Configurable multi-step flow (admin defines which steps via FlowBuilder)
+- AI document scanning via AWS Textract (DocumentScanController)
+- S3 file storage with local fallback (FileStorageService)
+- Quiz system with auto-grading and pass/fail
+- Email verification flow
+- Applicant status tracking (pipeline stages)
+
+### Source of Truth
+The **Railway-deployed `dfrnt-recruitment`** app (`Deliver-Different-Testing/dfrnt-recruitment`) is the most advanced version. The code in this repo's `src/pages/applicant/` and `Controllers/Applicant/` is copied from that production codebase.
+
+## 6. Frontend Notes
 
 - **`src/services/np_mockData.ts`** — Re-export shim for `np_devData.ts` (backward compat)
 - **`src/services/portal_mockData.ts`** — Re-export shim for `portal_devData.ts` (backward compat)
@@ -184,7 +229,7 @@ Authorization policies:
 - **`src/services/np_schedulingMockData.ts`** — Contains `MOCK_*` constants but is NOT imported by any service file. Safe to remove when scheduling is fully wired.
 - **`src/services/np_openforceService.ts`** — References OpenForce API endpoints. **OpenForce integration is handled by Accounts** — this frontend service should either be removed or redirected to call Accounts API endpoints.
 
-## 6. Known Issues / TODOs
+## 8. Known Issues / TODOs
 
 1. **PortalReportService** — May still reference Accounts-domain data. Needs audit to confirm it calls Accounts API for financial reports.
 
@@ -204,7 +249,7 @@ Authorization policies:
 
 9. **`np_openforceService.ts`** — Frontend service for OpenForce that should either be removed or pointed at Accounts API.
 
-## 7. Removed / Migrated Entities
+## 9. Removed / Migrated Entities
 
 The following entities were removed from courier-portal (now in Accounts app):
 
