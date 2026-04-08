@@ -201,28 +201,10 @@ builder.Services.AddAuthorizationBuilder()
 builder.Services.AddFluentValidationAutoValidation();
 
 // ═══════════════════════════════════════════════════════════
-// ── NP Redesign Services ──
+// ── Applicant / Portal Feature Services ──
 // ═══════════════════════════════════════════════════════════
-builder.Services.AddScoped<IFleetService, FleetService>();
-builder.Services.AddScoped<ISchedulingService, SchedulingService>();
-builder.Services.AddScoped<ITrainingService, TrainingService>();
-builder.Services.AddScoped<INpSettingsService, NpSettingsService>();
-builder.Services.AddScoped<ICourierImportService, CourierImportService>();
-builder.Services.AddScoped<IAgentImportService, AgentImportService>();
-builder.Services.AddScoped<IUserImportService, UserImportService>();
 builder.Services.AddScoped<IPortalService, PortalService>();
-
-// ── Feature Services (courier-portal specific) ──
-builder.Services.AddScoped<ComplianceService>();
-builder.Services.AddScoped<DocumentTypeService>();
-builder.Services.AddScoped<DriverApprovalService>();
-builder.Services.AddScoped<MessengerService>();
 builder.Services.AddScoped<QuizService>();
-builder.Services.AddScoped<RecruitmentService>();
-builder.Services.AddScoped<RegistrationFieldService>();
-
-// Infringements
-builder.Services.AddScoped<InfringementService>();
 
 // ═══════════════════════════════════════════════════════════
 // ── Portal Services (courier self-service) ──
