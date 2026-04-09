@@ -7,7 +7,7 @@ namespace CourierPortal.Api.Controllers.Applicant;
 
 [ApiController]
 [Route("api/[controller]")]
-public class ApplicantController(AppDbContext db) : ControllerBase
+public class ApplicantController(DespatchContext db) : ControllerBase
 {
     [HttpGet]
     public async Task<IActionResult> GetAll() =>

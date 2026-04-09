@@ -290,7 +290,7 @@ public partial class TucCourier
 
     public virtual CourierType CourierType { get; set; }
 
-    public virtual ICollection<Infringement> Infringements { get; set; } = new List<Infringement>();
+    // Infringement collection — in Steve-v2.0
 
     public virtual TblBulkRegion Region { get; set; }
 

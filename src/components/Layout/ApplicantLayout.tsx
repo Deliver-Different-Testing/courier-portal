@@ -1,5 +1,5 @@
 import { Outlet, NavLink, useNavigate } from 'react-router-dom'
-import { useStore } from '../store'
+import { useStore } from '../../store'
 import { HelpCircle, LogOut, LayoutDashboard, Users, Settings, FileText, Workflow } from 'lucide-react'
 
 const navItems = [

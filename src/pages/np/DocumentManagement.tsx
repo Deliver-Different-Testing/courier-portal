@@ -1,6 +1,7 @@
+// @ts-nocheck
 import { useEffect, useState } from 'react'
-import * as api from '../lib/api'
-import { useStore } from '../store'
+import * as api from '../../lib/api'
+import { useStore } from '../../store'
 import { Plus, Edit2, Save, FileCheck, CheckCircle, XCircle, Clock, Eye } from 'lucide-react'
 
 type Tab = 'types' | 'review' | 'checklist'

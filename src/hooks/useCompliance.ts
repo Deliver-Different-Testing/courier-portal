@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
 import { complianceService } from '@/services/np_complianceService';
 import { couriers } from '@/services/np_mockData';

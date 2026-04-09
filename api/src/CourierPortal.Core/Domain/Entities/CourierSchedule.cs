@@ -16,7 +16,7 @@ public class CourierSchedule
     public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
 
     // Navigation
-    public NpCourier? Courier { get; set; }
+    // NpCourier ref — in Steve-v2.0
 }
 
 /// <summary>

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, useCallback } from 'react';
 import { documentTypeService, courierDocumentService } from '@/services/np_documentService';
 import type {

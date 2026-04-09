@@ -58,5 +58,5 @@ public class CourierApplicant
     public string? Notes { get; set; }
 
     // Navigation
-    public NpCourier? ApprovedAsCourier { get; set; }
+    // NpCourier ref — in Steve-v2.0
 }

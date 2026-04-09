@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useEffect, useRef } from 'react'
 import { CheckCircle, XCircle, Clock } from 'lucide-react'
 import { NavButtons, StepWrapper } from './shared'

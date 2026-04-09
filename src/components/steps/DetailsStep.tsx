@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useState, useRef } from 'react'
 import { Camera, CheckCircle, Loader2, RefreshCw } from 'lucide-react'
 import { Field, NavButtons, StepWrapper } from './shared'

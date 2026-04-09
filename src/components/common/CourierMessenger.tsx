@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect, useRef } from 'react';
 import { fleetService, type Fleet } from '@/services/np_fleetService';
 

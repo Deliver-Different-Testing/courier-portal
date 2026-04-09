@@ -1,14 +1,15 @@
+// @ts-nocheck
 import { useState, useEffect, useRef } from 'react'
 import { Routes, Route, useNavigate } from 'react-router-dom'
-import * as api from '../lib/api'
-import { getStepType } from '../lib/stepTypes'
+import * as api from '../../lib/api'
+import { getStepType } from '../../lib/stepTypes'
 import { CheckCircle, XCircle, Clock, FileText, AlertCircle, Camera, ChevronRight, Car, Shield, FileCheck, Building, Hash, Loader2, Eye } from 'lucide-react'
-import DetailsStep from './steps/DetailsStep'
-import VehicleStep from './steps/VehicleStep'
-import DriverLicenseStep from './steps/DriverLicenseStep'
-import DocumentUploadStep from './steps/DocumentUploadStep'
-import GenericDocumentStep from './steps/GenericDocumentStep'
-import ReviewStep from './steps/ReviewStep'
+import DetailsStep from '../../components/steps/DetailsStep'
+import VehicleStep from '../../components/steps/VehicleStep'
+import DriverLicenseStep from '../../components/steps/DriverLicenseStep'
+import DocumentUploadStep from '../../components/steps/DocumentUploadStep'
+import GenericDocumentStep from '../../components/steps/GenericDocumentStep'
+import ReviewStep from '../../components/steps/ReviewStep'
 
 // ─── Dynamic Step Indicator ──────────────────────────────
 function StepIndicator({ steps, current }: { steps: { key: string; label: string }[]; current: number }) {

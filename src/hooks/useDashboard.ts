@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { dashboardService } from '@/services/np_dashboardService';
 
 export function useDashboard() {

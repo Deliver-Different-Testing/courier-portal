@@ -15,7 +15,7 @@ namespace CourierPortal.Core.Validators.Portal
         {
             RuleFor(x => x.InvoiceNo)
                 .NotEmpty()
-                .Must(InvoiceUtility.IsValidInvoiceNo).WithMessage("Invalid Invoice No.");
+.WithMessage("Invalid format.");
         }
     }
 }

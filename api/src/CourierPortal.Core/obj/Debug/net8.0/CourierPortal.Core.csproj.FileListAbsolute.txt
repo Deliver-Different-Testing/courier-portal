@@ -1,0 +1,6 @@
+/tmp/courier-portal/api/src/CourierPortal.Core/obj/Debug/net8.0/CourierPortal.Core.csproj.AssemblyReference.cache
+/tmp/courier-portal/api/src/CourierPortal.Core/obj/Debug/net8.0/CourierPortal.Core.GeneratedMSBuildEditorConfig.editorconfig
+/tmp/courier-portal/api/src/CourierPortal.Core/obj/Debug/net8.0/CourierPortal.Core.AssemblyInfoInputs.cache
+/tmp/courier-portal/api/src/CourierPortal.Core/obj/Debug/net8.0/CourierPortal.Core.AssemblyInfo.cs
+/tmp/courier-portal/api/src/CourierPortal.Core/obj/Debug/net8.0/CourierPortal.Core.csproj.CoreCompileInputs.cache
+/tmp/courier-portal/api/src/CourierPortal.Core/obj/Debug/net8.0/CourierPortal.Core.sourcelink.json

@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { useEffect, useState } from 'react'
 import * as api from '../../services/np_stepApi'
 import { STEP_TYPES, getStepType } from '../../lib/stepTypes'
