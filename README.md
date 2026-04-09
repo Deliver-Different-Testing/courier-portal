@@ -109,3 +109,31 @@ This repo and [Steve-v2.0-NP-Redesign](https://github.com/Deliver-Different-Test
 6. Database migrations from both repos run on the same Despatch DB (no conflicts — different table names)
 
 **Until merge:** This repo is independently deployable. It calls Steve-v2.0's NP API for any admin data it needs (e.g. fleet lists, compliance profiles).
+
+---
+
+## UI Demos (Clickable Prototypes)
+
+All pages Loc needs to build against are live on GitHub Pages:
+
+### Admin Pages (Garry's scope — Steve-v2.0)
+**https://deliver-different-testing.github.io/Steve-v2.0-NP-Redesign/**
+- Select "NP Admin" role → Dashboard, Fleet, Compliance, Scheduling, Recruitment Pipeline, Settings
+- Select "Tenant" role → Agent Discovery, Agent List, Onboarding, Quotes
+- Select "In-house Delivery" → Deliveries, Fleet, Reports
+
+### Courier Portal (Loc's scope — mobile-first)
+**https://deliver-different-testing.github.io/Steve-v2.0-NP-Redesign/portal/#/courier/dfrnt/dashboard**
+- Dashboard, My Runs, Schedule, Contractors, Invoicing, Reports
+- Mobile-first design, tenant-branded (DFRNT / Urgent / Medical)
+
+### Applicant Portal (Loc's scope — mobile-first)
+**https://deliver-different-testing.github.io/Steve-v2.0-NP-Redesign/portal/#/apply/dfrnt**
+- Multi-step application flow: Details → License → Vehicle → Documents → Quiz → Review
+- Tenant-branded registration
+
+### Recruitment Admin (Production on Railway)
+**https://apply.urgent.co.nz**
+- Admin login: admin / dfrnt2026!
+- FlowBuilder, QuizBuilder, Pipeline, Document Management, Settings
+- This is the working production version — courier-portal's admin pages match this
