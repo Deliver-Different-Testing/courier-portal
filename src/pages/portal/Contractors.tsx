@@ -1,8 +1,46 @@
-import { useState } from 'react';
-import { mockSubcontractors, type Subcontractor } from '@/services/portal_mockData';
+import { useState, useEffect } from 'react';
+import { portalCourierService, type Subcontractor } from '@/services/portal_courierService';
 
 export default function PortalContractors() {
+  const [subcontractors, setSubcontractors] = useState<Subcontractor[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selected, setSelected] = useState<Subcontractor | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await portalCourierService.getSubcontractors();
+        if (!cancelled) setSubcontractors(data);
+      } catch (e) {
+        if (!cancelled) setError('Failed to load subcontractors.');
+        console.error('Contractors load failed:', e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-text-muted text-sm">Loading…</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-error/10 border border-error/30 rounded-xl p-4 text-error text-sm">
+        {error}
+      </div>
+    );
+  }
 
   if (selected) {
     return (
@@ -39,7 +77,10 @@ export default function PortalContractors() {
   return (
     <div className="space-y-3">
       <h2 className="font-semibold text-sm">Subcontractors</h2>
-      {mockSubcontractors.map(sc => (
+      {subcontractors.length === 0 && (
+        <div className="text-center py-12 text-text-muted text-sm">No subcontractors found</div>
+      )}
+      {subcontractors.map(sc => (
         <button
           key={sc.id}
           onClick={() => setSelected(sc)}

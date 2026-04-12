@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { mockRuns, type Run, type Job } from '@/services/portal_mockData';
+import { useState, useEffect } from 'react';
+import { portalCourierService } from '@/services/portal_courierService';
+import type { Run, Job } from '@/services/portal_mockData';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-NZ', { weekday: 'short', month: 'short', day: 'numeric' });
@@ -19,14 +20,52 @@ const JOB_STATUS_COLORS: Record<string, string> = {
 };
 
 export default function PortalRuns() {
+  const [runs, setRuns] = useState<Run[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedRun, setSelectedRun] = useState<Run | null>(null);
   const [filter, setFilter] = useState<'all' | 'upcoming' | 'completed'>('all');
 
-  const filtered = mockRuns.filter(r => {
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await portalCourierService.getRuns();
+        if (!cancelled) setRuns(data);
+      } catch (e) {
+        if (!cancelled) setError('Failed to load runs.');
+        console.error('Runs load failed:', e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  const filtered = runs.filter(r => {
     if (filter === 'upcoming') return r.status !== 'Completed';
     if (filter === 'completed') return r.status === 'Completed';
     return true;
   });
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-text-muted text-sm">Loading runs…</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-error/10 border border-error/30 rounded-xl p-4 text-error text-sm">
+        {error}
+      </div>
+    );
+  }
 
   if (selectedRun) return <RunDetail run={selectedRun} onBack={() => setSelectedRun(null)} />;
 

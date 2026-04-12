@@ -1,8 +1,50 @@
-import { mockReportSummary } from '@/services/portal_mockData';
+import { useState, useEffect } from 'react';
+import { portalCourierService, type ReportSummary } from '@/services/portal_courierService';
 
 export default function PortalReports() {
-  const r = mockReportSummary;
-  const maxEarnings = Math.max(...r.weeklyData.map(w => w.earnings));
+  const [report, setReport] = useState<ReportSummary | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await portalCourierService.getReportSummary();
+        if (!cancelled) setReport(data);
+      } catch (e) {
+        if (!cancelled) setError('Failed to load report data.');
+        console.error('Reports load failed:', e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-text-muted text-sm">Loading reports…</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-error/10 border border-error/30 rounded-xl p-4 text-error text-sm">
+        {error}
+      </div>
+    );
+  }
+
+  if (!report) return null;
+
+  const r = report;
+  const maxEarnings = r.weeklyData.length > 0 ? Math.max(...r.weeklyData.map(w => w.earnings)) : 1;
 
   return (
     <div className="space-y-4">
@@ -37,21 +79,23 @@ export default function PortalReports() {
       </div>
 
       {/* Weekly Bar Chart */}
-      <div className="bg-white rounded-xl border border-border p-4">
-        <h3 className="font-semibold text-sm mb-3">Weekly Earnings</h3>
-        <div className="flex items-end gap-2 h-32">
-          {r.weeklyData.map(w => (
-            <div key={w.week} className="flex-1 flex flex-col items-center gap-1">
-              <div className="text-[10px] text-text-muted font-medium">${w.earnings}</div>
-              <div
-                className="w-full bg-brand-cyan rounded-t"
-                style={{ height: `${(w.earnings / maxEarnings) * 100}%`, minHeight: 4 }}
-              />
-              <div className="text-[10px] text-text-muted">{w.week.split(' ')[0]}</div>
-            </div>
-          ))}
+      {r.weeklyData.length > 0 && (
+        <div className="bg-white rounded-xl border border-border p-4">
+          <h3 className="font-semibold text-sm mb-3">Weekly Earnings</h3>
+          <div className="flex items-end gap-2 h-32">
+            {r.weeklyData.map(w => (
+              <div key={w.week} className="flex-1 flex flex-col items-center gap-1">
+                <div className="text-[10px] text-text-muted font-medium">${w.earnings}</div>
+                <div
+                  className="w-full bg-brand-cyan rounded-t"
+                  style={{ height: `${(w.earnings / maxEarnings) * 100}%`, minHeight: 4 }}
+                />
+                <div className="text-[10px] text-text-muted">{w.week.split(' ')[0]}</div>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

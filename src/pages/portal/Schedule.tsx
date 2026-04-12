@@ -1,5 +1,6 @@
-import { useState, useCallback } from 'react';
-import { mockSchedules, type Schedule, type TimeSlot } from '@/services/portal_mockData';
+import { useState, useCallback, useEffect } from 'react';
+import { portalCourierService } from '@/services/portal_courierService';
+import type { Schedule, TimeSlot } from '@/services/portal_mockData';
 
 type Tab = 'pending' | 'available' | 'unavailable' | 'cancelled';
 const TABS: { key: Tab; label: string; statusId: number | null }[] = [
@@ -9,7 +10,7 @@ const TABS: { key: Tab; label: string; statusId: number | null }[] = [
   { key: 'cancelled', label: 'Cancelled', statusId: 3 },
 ];
 
-function formatTime(date: string, time: string) {
+function formatTime(_date: string, time: string) {
   const [h, m] = time.split(':');
   const hr = parseInt(h);
   return `${hr > 12 ? hr - 12 : hr || 12}:${m} ${hr >= 12 ? 'PM' : 'AM'}`;
@@ -26,31 +27,88 @@ function formatSlotTime(iso: string) {
 
 export default function PortalSchedule() {
   const [tab, setTab] = useState<Tab>('pending');
-  const [schedules, setSchedules] = useState(mockSchedules);
+  const [schedules, setSchedules] = useState<Schedule[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [swipedId, setSwipedId] = useState<number | null>(null);
   const [timeSlotsFor, setTimeSlotsFor] = useState<Schedule | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function load() {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await portalCourierService.getSchedules();
+        if (!cancelled) setSchedules(data);
+      } catch (e) {
+        if (!cancelled) setError('Failed to load schedules.');
+        console.error('Schedule load failed:', e);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+    load();
+    return () => { cancelled = true; };
+  }, []);
 
   const filtered = schedules.filter(s => {
     if (tab === 'pending') return !s.response;
     return s.response?.statusId === TABS.find(t => t.key === tab)!.statusId;
   });
 
-  const markAvailable = useCallback((id: number, timeSlotId?: number) => {
+  const markAvailable = useCallback(async (id: number, timeSlotId?: number) => {
+    // Optimistic update
     setSchedules(prev => prev.map(s =>
       s.id === id ? { ...s, response: { statusId: 1, timeSlot: timeSlotId ? s.timeSlots.find(t => t.id === timeSlotId) : undefined } } : s
     ));
     setSwipedId(null);
     setTimeSlotsFor(null);
+    try {
+      await portalCourierService.markAvailable(id, timeSlotId);
+    } catch (e) {
+      console.error('markAvailable failed:', e);
+      // Revert on failure
+      setSchedules(prev => prev.map(s =>
+        s.id === id ? { ...s, response: null } : s
+      ));
+    }
   }, []);
 
-  const markUnavailable = useCallback((id: number) => {
+  const markUnavailable = useCallback(async (id: number) => {
+    // Optimistic update
     setSchedules(prev => prev.map(s =>
       s.id === id ? { ...s, response: { statusId: 2 } } : s
     ));
     setSwipedId(null);
+    try {
+      await portalCourierService.markUnavailable(id);
+    } catch (e) {
+      console.error('markUnavailable failed:', e);
+      // Revert on failure
+      setSchedules(prev => prev.map(s =>
+        s.id === id ? { ...s, response: null } : s
+      ));
+    }
   }, []);
 
   const allSlotsFull = (s: Schedule) => s.timeSlots.length > 0 && s.timeSlots.every(t => t.wanted && t.remaining === 0);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="text-text-muted text-sm">Loading schedules…</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-error/10 border border-error/30 rounded-xl p-4 text-error text-sm">
+        {error}
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -153,7 +211,7 @@ export default function PortalSchedule() {
             <h3 className="font-bold text-lg mb-1">Time Slots</h3>
             <p className="text-xs text-text-muted mb-4">Choose your initial pickup window</p>
             <div className="space-y-2">
-              {timeSlotsFor.timeSlots.map(slot => (
+              {timeSlotsFor.timeSlots.map((slot: TimeSlot) => (
                 <button
                   key={slot.id}
                   disabled={slot.remaining === 0}
