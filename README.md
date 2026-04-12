@@ -3,8 +3,8 @@
 Full courier management platform — admin portal, courier self-service (mobile + desktop), and applicant recruitment.
 
 **Developer:** Loc  
-**Backend:** .NET 8, EF Core, SQL Server (Despatch DB + CourierPortal DB)  
-**Frontend:** React 18 + TypeScript, Vite, Tailwind CSS  
+**Backend:** .NET 8, EF Core, SQL Server (Despatch DB + CourierPortal DB) — 288 C# files, 39 controllers  
+**Frontend:** React 18 + TypeScript, Vite, Tailwind CSS — 146 files, 55 pages, 0 TypeScript errors  
 
 ---
 
@@ -157,20 +157,46 @@ Currently deployed recruitment app (PostgreSQL). Courier-portal has more complet
 
 ---
 
+## Frontend API Status
+
+All frontend services now make real API calls. Mock data files have been deleted.
+
+| Layer | Status |
+|---|---|
+| **Portal services** (courier self-service) | ✅ Wired to real `api/portal/` controllers |
+| **Invoice service** | ✅ Full CRUD — create, view, uninvoiced, past |
+| **Quiz service** | ✅ Wired to real QuizController (was localStorage) |
+| **Document scan** | ✅ Wired to real DocumentScanController (Claude Vision) |
+| **Step API** (applicant flow) | ✅ Wired to real PortalSteps + Applicant controllers |
+| **NP Admin services** | ⚠️ Wired to real API endpoints — **Loc needs to register NP services in Program.cs** |
+
+### What Loc needs to do in Program.cs
+
+The NP Redesign controllers and services have been copied in but are **not yet registered** in `Program.cs`. Loc needs to add DI registrations for:
+- NpDashboard, NpCourier, NpUser, NpSettings, NpReport services
+- Compliance, Fleet, Scheduling, Recruitment, Contract, Training, Messenger services
+- CourierImport, UserImport services
+- AgentsDbContext (for agent/marketplace tables)
+
+Each frontend service file has `@backend-needed` JSDoc comments indicating which controller/endpoint it calls.
+
 ## Key Files for Development
 
 | What | Where |
 |---|---|
 | **Handover guide** | `IMPLEMENTATION.md` — step-by-step wiring for every page |
+| **Handover audit** | `HANDOVER-AUDIT.md` — gap analysis: mock data, missing endpoints, broken routes |
 | **Backend audit** | `AUDIT.md` — controller/entity overlap analysis across 4 repos |
-| **Routing** | `src/App.tsx` — all routes |
+| **Routing** | `src/App.tsx` — all routes (52 routes) |
 | **Sidebar nav** | `src/components/Layout/Sidebar.tsx` — admin navigation |
 | **Invoice service** | `api/src/CourierPortal.Core/Services/Portal/InvoiceService.cs` |
 | **Document scanning** | `api/src/CourierPortal.Api/Controllers/DocumentScanController.cs` |
+| **NP Controllers** | `api/src/CourierPortal.Api/Controllers/Np*.cs`, `Compliance*.cs`, `Fleet*.cs`, etc. |
 | **Tenant config** | `src/lib/tenants.ts` — tenant branding/config |
 
 ---
 
 ## TypeScript Status
 
-✅ Zero errors (`npx tsc --noEmit` passes clean)
+✅ Zero errors (`npx tsc --noEmit` passes clean)  
+✅ All mock data files deleted (np_mockData, np_schedulingMockData, portal_mockData, portal_devData)

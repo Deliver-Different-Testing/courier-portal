@@ -11,17 +11,22 @@
 The `courier-portal` repo has been set up as the **authoritative app** for courier recruitment, compliance, fleet management, scheduling, and courier self-service. Here's what's already in place:
 
 ### Backend (`api/`)
-- **199 C# files** — fully rebased from NP Redesign. Do not touch.
-- All controllers are correct and in their final locations.
-- See `AUDIT.md` for full controller/service inventory and architecture decisions.
-- **Known TODOs in AUDIT.md you must complete:**
+- **288 C# files, 39 controllers** — includes both the original Portal/Applicant controllers AND the NP Redesign controllers (copied from NP-Agent-Management, namespaced to `CourierPortal.*`).
+- **Portal controllers** (in `Controllers/Portal/`) — Auth, Couriers, Invoices, Runs, Schedules, Reports, Contracts, Locations, Vehicles, Applicants, Recaptcha. These are fully implemented with service registrations in Program.cs. ✅
+- **NP Redesign controllers** (in `Controllers/`) — NpDashboard, NpCourier, NpUser, NpSettings, NpReport, Fleet, Compliance, Scheduling, Recruitment, RecruitmentSettings, Training, Messenger, DocumentType, CourierDocument, CourierImport, UserImport, ComplianceAutomation, Openforce. These have been copied in but their **services are NOT yet registered in Program.cs**. 🔧 Loc's main job.
+- See `AUDIT.md` for full controller/entity overlap analysis.
+- **Known TODOs you must complete:**
+  - `Program.cs` → **Register all NP Redesign services.** Each NP controller needs its service implementation registered. The service classes are in `CourierPortal.Infrastructure/Services/` and interfaces in `CourierPortal.Core/Interfaces/`. Add scoped registrations for each.
   - `Portal/InvoiceService` → **KEEP as-is.** Couriers generate invoices through the portal by selecting uninvoiced runs. This reads from DespatchContext (CourierInvoice, CourierInvoiceLine tables) and must stay in courier-portal. The Accounts app handles invoice *processing/settlement* after creation — but invoice *generation* by the courier happens here.
-  - `Portal/RunService` → Keep. Uses `InvoiceUtility.IsCompleted` / `CanInvoice` to determine which runs are invoiceable. These helpers should stay in courier-portal (they're needed for the Create Invoice flow).
-  - `Program.cs` → NP Redesign service interface registrations are `TODO` placeholders — register concrete implementations
+  - `Portal/RunService` → Keep. Uses `InvoiceUtility.IsCompleted` / `CanInvoice` to determine which runs are invoiceable.
   - **Accounts boundary clarification:** Courier-portal owns invoice *creation* (courier selects runs → generates invoice). Accounts owns invoice *processing* (batching, settlements, payments, deductions, statements). The `Portal/InvoicesController` endpoints (Recent, Past, Uninvoiced, Create) all stay in courier-portal.
+  - **Openforce boundary:** Courier-portal owns recruitment/onboarding status only. Payments/settlements/1099 stay in Accounts.
 
 ### Frontend (`src/`)
-All frontend pages have been copied in and are TypeScript-clean (0 errors, verified with `tsc --noEmit`).
+- **146 files, 55 pages, 0 TypeScript errors** — all pages complete and compiling clean.
+- **All mock data files deleted.** No more `np_mockData.ts`, `portal_mockData.ts`, `np_schedulingMockData.ts`, or `portal_devData.ts`.
+- **All frontend services now make real API calls** — portal services call `api/portal/*` controllers (which are registered), NP Admin services call the NP controller routes (which exist but need Program.cs registration).
+- Each NP service file has `@backend-needed` JSDoc comments indicating which controller it calls.
 
 **Page inventory:**
 
