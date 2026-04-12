@@ -1,139 +1,176 @@
 # DFRNT Courier Portal
 
-Courier self-service portal and applicant recruitment app. **Developer: Loc**
+Full courier management platform — admin portal, courier self-service (mobile + desktop), and applicant recruitment.
 
-> **Scope change (Apr 2025):** NP Admin features (fleet, compliance, scheduling, recruitment pipeline, training, settings) have been moved to the [Steve-v2.0-NP-Redesign](https://github.com/dfrnt/Steve-v2.0-NP-Redesign) repo, which Garry owns. This repo now contains **only** the courier-facing portal and the applicant recruitment flow.
+**Developer:** Loc  
+**Backend:** .NET 8, EF Core, SQL Server (Despatch DB + CourierPortal DB)  
+**Frontend:** React 18 + TypeScript, Vite, Tailwind CSS  
 
-## User Roles
+---
 
-1. **Courier Portal** — Self-service for active couriers: dashboard, runs, schedule, invoicing, reports, contractors
-2. **Applicant Portal** — Multi-step recruitment application: registration, document upload, quiz, declaration
+## What This App Does
 
-## Structure
+### For NP Admins (desktop)
+- **Fleet management** — courier CRUD, fleet assignment, import
+- **Recruitment** — pipeline, applicant detail, stage settings, advertising, portal URL
+- **Compliance** — dashboard, profiles, document types, driver approval
+- **Scheduling** — shift/roster management
+- **Training** — quiz builder, flow builder, document management
+- **Messenger** — NP ↔ courier messaging
+- **Settings** — registration fields, contracts, Openforce recruitment status, tenant config
+- **Users** — NP team management, import
+
+### For Couriers (mobile-first + desktop)
+- **Dashboard** — compliance alerts, earnings summary, quick actions
+- **My Runs** — view assigned runs, job details
+- **Schedule** — view/mark availability
+- **Invoicing** — create invoices from uninvoiced runs, or view buyer-created tax invoices (controlled by fleet setting)
+- **Documents** — upload/manage compliance documents with AI scan-to-fill
+- **Training** — complete assigned quizzes
+- **Contractors** — manage subcontractors
+- **Settings** — profile, vehicle, contact info
+
+### For Applicants (mobile, public-facing)
+- **Multi-step application** — details, driver license scan, vehicle info, document upload, quiz, review
+- **AI document scanning** — Claude Vision extracts fields from license/rego/insurance photos
+- **Tenant-branded** — each NP gets their own branded portal URL
+
+---
+
+## Project Structure
 
 ```
-src/
-├── pages/
-│   ├── portal/       — Courier self-service (6 pages)
-│   │   ├── Dashboard, Runs, Schedule
-│   │   ├── Contractors, Invoicing, Reports
-│   ├── applicant/    — Applicant recruitment flow
-│   │   └── ApplicantPortal
-│   ├── np/           — Admin tools used by applicant flow (5 pages)
-│   │   ├── FlowBuilder — step config for applicant flow
-│   │   ├── QuizBuilder — quiz creation for applicants
-│   │   ├── AdminSettings — recruitment admin settings
-│   │   ├── DocumentManagement — recruitment document config
-│   │   └── SetupPassword — admin auth
-│   └── courier/
-│       └── CourierTraining
-├── components/
-│   ├── steps/        — Applicant step components
-│   └── Layout/       — Admin + applicant layouts
-├── services/         — Portal API services (portal_*.ts)
-└── context/          — React contexts
-
-api/
-└── src/
-    ├── CourierPortal.Api/
-    │   ├── Controllers/
-    │   │   ├── Portal/       — Courier self-service endpoints
-    │   │   ├── Applicant/    — Applicant registration endpoints
-    │   │   ├── DocumentScanController.cs — Document scanning (applicant)
-    │   │   ├── PortalStepsController.cs  — Applicant flow steps
-    │   │   ├── QuizController.cs         — Applicant quiz
-    │   │   └── PortalController.cs       — Portal config
-    │   └── Middleware/
-    │       ├── ErrorHandlingMiddleware.cs
-    │       └── HubAuthMiddleware.cs
-    ├── CourierPortal.Core/
-    │   ├── Domain/Entities/  — Portal + Applicant entities
-    │   ├── DTOs/Portal/      — Portal DTOs (auth, runs, invoices, schedules, etc.)
-    │   ├── Interfaces/       — Service interfaces
-    │   └── Services/
-    │       └── Portal/       — Portal service implementations
-    └── CourierPortal.Infrastructure/
-        ├── Services/         — Email, file storage, password utilities
-        └── Repositories/     — Data access
-
-database/                     — SQL migrations (shared with Steve-v2.0)
+courier-portal/
+├── api/                              # .NET 8 Backend (199 C# files)
+│   └── src/
+│       ├── CourierPortal.Api/        # Controllers + Middleware
+│       │   ├── Controllers/
+│       │   │   ├── Portal/           # Courier self-service (auth, runs, invoices, schedules, etc.)
+│       │   │   ├── Applicant/        # Public applicant registration
+│       │   │   ├── DocumentScanController.cs   # AI doc scanning (Anthropic Claude Vision)
+│       │   │   ├── PortalStepsController.cs    # Applicant flow config
+│       │   │   ├── QuizController.cs           # Quiz CRUD + attempts
+│       │   │   └── PortalController.cs         # Portal config
+│       │   └── Middleware/
+│       ├── CourierPortal.Core/       # Domain, DTOs, Services, Interfaces
+│       │   ├── Domain/
+│       │   │   ├── Entities/         # All EF entities
+│       │   │   ├── CourierPortalContext.cs    # New features DB
+│       │   │   └── DespatchContext.cs         # Legacy Despatch DB
+│       │   ├── DTOs/
+│       │   ├── Services/Portal/      # Portal service implementations
+│       │   ├── Interfaces/
+│       │   ├── Utilities/
+│       │   └── Validators/
+│       └── CourierPortal.Infrastructure/   # Email, file storage, repos
+│
+├── src/                              # React 18 Frontend (149 files)
+│   ├── App.tsx                       # Full routing (admin + mobile + portal + applicant)
+│   ├── pages/
+│   │   ├── np/                       # NP Admin pages (29 pages)
+│   │   ├── courier/                  # Courier mobile app (10 pages, bottom-nav)
+│   │   ├── portal/                   # Courier desktop portal (6 pages)
+│   │   ├── applicant/                # Public applicant wizard
+│   │   └── settings/                 # Tenant config
+│   ├── components/
+│   │   ├── Layout/                   # Admin layout (sidebar, topbar)
+│   │   ├── portal/                   # Courier portal layout
+│   │   ├── common/                   # Shared UI (ScanToFill, StatCard, Modal, etc.)
+│   │   ├── steps/                    # Applicant wizard steps
+│   │   └── import/                   # Bulk import components
+│   ├── services/                     # API service layer (30 files)
+│   ├── hooks/                        # React hooks (10 files)
+│   ├── context/                      # RoleContext, TenantConfigContext
+│   ├── lib/                          # Utilities, tenant config
+│   └── types/                        # TypeScript types
+│
+├── IMPLEMENTATION.md                 # Step-by-step handover doc for Loc
+├── AUDIT.md                          # Backend rebase audit (controller/entity analysis)
+└── package.json
 ```
+
+---
 
 ## Quick Start
 
 ```bash
+# Frontend
+npm install
+npm run dev          # → http://localhost:5173
+
 # Backend
 cd api/src/CourierPortal.Api
 dotnet restore
-dotnet run
-
-# Frontend
-cd src
-npm install
-npm run dev
+dotnet run           # → http://localhost:5000
 ```
+
+---
 
 ## Environment Variables
 
 | Variable | Required | Description |
 |---|---|---|
-| `MasterSQLConnection` | ✅ | Master DB connection string |
+| `MasterSQLConnection` | ✅ | Master Controller DB connection string |
 | `Domain` | ✅ | Cookie domain (e.g. `.deliverdifferent.com`) |
 | `RedisConfig` | ✅ | Redis connection string |
-| `JWTSecretKey` | ✅ | JWT signing key |
+| `JWTSecretKey` | ✅ | JWT signing key for courier auth |
 | `Issuer` | ✅ | JWT issuer |
 | `Audience` | ✅ | JWT audience |
 | `PublicPath` | ✅ | Login redirect URL |
-
-## Related Repos
-
-- **Steve-v2.0-NP-Redesign** — NP Admin (fleet, compliance, scheduling, recruitment pipeline, training, settings) — owned by Garry
-
----
-
-## Future Merge Plan
-
-This repo and [Steve-v2.0-NP-Redesign](https://github.com/Deliver-Different-Testing/Steve-v2.0-NP-Redesign) are being developed separately for parallel workstreams but **will be merged into a single unified app** in the future.
-
-| Repo | Developer | Scope | Merge Role |
-|---|---|---|---|
-| **Steve-v2.0-NP-Redesign** | Garry | NP Admin — fleet, compliance, scheduling, recruitment pipeline, training, settings, marketplace | Becomes the **admin tile** in the merged app |
-| **courier-portal** (this repo) | Loc | Courier self-service + applicant recruitment | Becomes the **portal tile** in the merged app |
-
-**Merge approach:**
-1. This repo's Portal/ controllers + pages merge into Steve-v2.0's `web-portal` or `web-unified/pages/portal/`
-2. This repo's Applicant/ controllers + step components merge into the applicant flow
-3. Shared entities (Quiz, DocumentType, PortalStep) exist in both — deduplicate keeping Steve-v2.0's version
-4. `FileStorageService` + `DocumentScanController` are shared — keep one copy
-5. Single `Program.cs` registers all services from both projects
-6. Database migrations from both repos run on the same Despatch DB (no conflicts — different table names)
-
-**Until merge:** This repo is independently deployable. It calls Steve-v2.0's NP API for any admin data it needs (e.g. fleet lists, compliance profiles).
+| `ANTHROPIC_API_KEY` | Optional | For AI document scanning (Claude Vision) |
+| `ReportBase` | Optional | SSRS report server base URL |
+| `ReportUsername` | Optional | SSRS NTLM username |
+| `ReportPassword` | Optional | SSRS NTLM password |
 
 ---
 
-## UI Demos (Clickable Prototypes)
+## Invoicing — Two Modes
 
-All pages Loc needs to build against are live on GitHub Pages:
+Controlled by `tucCourier.uccrInternal` (set per fleet):
 
-### Admin Pages (Garry's scope — Steve-v2.0)
-**https://deliver-different-testing.github.io/Steve-v2.0-NP-Redesign/**
-- Select "NP Admin" role → Dashboard, Fleet, Compliance, Scheduling, Recruitment Pipeline, Settings
-- Select "Tenant" role → Agent Discovery, Agent List, Onboarding, Quotes
-- Select "In-house Delivery" → Deliveries, Fleet, Reports
+| `uccrInternal` | Mode | Courier experience |
+|---|---|---|
+| `false` | **Courier-generated** | Courier selects uninvoiced runs → creates own tax invoice |
+| `true` | **Buyer-created (BCTI)** | Company generates invoice via Accounts app. Courier views read-only PDFs by period |
 
-### Courier Portal (Loc's scope — mobile-first)
-**https://deliver-different-testing.github.io/Steve-v2.0-NP-Redesign/portal/#/courier/dfrnt/dashboard**
-- Dashboard, My Runs, Schedule, Contractors, Invoicing, Reports
-- Mobile-first design, tenant-branded (DFRNT / Urgent / Medical)
+See `IMPLEMENTATION.md` → Step 12 for full details.
 
-### Applicant Portal (Loc's scope — mobile-first)
-**https://deliver-different-testing.github.io/Steve-v2.0-NP-Redesign/portal/#/apply/dfrnt**
-- Multi-step application flow: Details → License → Vehicle → Documents → Quiz → Review
-- Tenant-branded registration
+---
 
-### Recruitment Admin (Production on Railway)
-**https://apply.urgent.co.nz**
-- Admin login: admin / dfrnt2026!
-- FlowBuilder, QuizBuilder, Pipeline, Document Management, Settings
-- This is the working production version — courier-portal's admin pages match this
+## Relationship with Other DFRNT Apps
+
+### dfrnt-agents-partners (Garry's repo)
+Handles agent discovery, agent CRUD, marketplace, NP tier management, vehicle rates, data masking, ECA/CLDA associations. **Separate app, same DB per tenant, different EF contexts.** Will merge into one Admin Manager tile long-term.
+
+| App | DbContext | Owns |
+|---|---|---|
+| courier-portal | `CourierPortalContext` + `DespatchContext` | Couriers, recruitment, scheduling, compliance, training, invoicing (creation), messaging |
+| dfrnt-agents-partners | `AgentsDbContext` | Agents, marketplace, NP tiers, vehicle rates |
+
+**Do not create cross-repo dependencies.** Each app is independently deployable.
+
+### Accounts App (accounts.dfrnt.com)
+Handles invoice *processing* (batching, settlements, payments, deductions, statements). Courier-portal creates invoices; Accounts processes them. The `CourierInvoice` entity is shared.
+
+### dfrnt-recruitment (Railway — apply.urgent.co.nz)
+Currently deployed recruitment app (PostgreSQL). Courier-portal has more complete versions of all its controllers. Migration path: dfrnt-recruitment serves the public applicant portal until courier-portal's applicant endpoints are fully wired, then retires.
+
+---
+
+## Key Files for Development
+
+| What | Where |
+|---|---|
+| **Handover guide** | `IMPLEMENTATION.md` — step-by-step wiring for every page |
+| **Backend audit** | `AUDIT.md` — controller/entity overlap analysis across 4 repos |
+| **Routing** | `src/App.tsx` — all routes |
+| **Sidebar nav** | `src/components/Layout/Sidebar.tsx` — admin navigation |
+| **Invoice service** | `api/src/CourierPortal.Core/Services/Portal/InvoiceService.cs` |
+| **Document scanning** | `api/src/CourierPortal.Api/Controllers/DocumentScanController.cs` |
+| **Tenant config** | `src/lib/tenants.ts` — tenant branding/config |
+
+---
+
+## TypeScript Status
+
+✅ Zero errors (`npx tsc --noEmit` passes clean)
