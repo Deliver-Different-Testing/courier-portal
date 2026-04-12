@@ -1,12 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import StatCard from '@/components/common/StatCard';
 import BarChart from '@/components/common/BarChart';
-import { reportService } from '@/services/np_reportService';
+import { reportService, type ReportData } from '@/services/np_reportService';
 
 export default function Reports() {
   const [from, setFrom] = useState('2026-02-22');
   const [to, setTo] = useState('2026-02-28');
-  const data = reportService.getData(from, to);
+  const [data, setData] = useState<ReportData>({ jobsCompleted: 0, onTimePercent: 0, revenue: '$0', dailyVolume: [] });
+
+  useEffect(() => {
+    reportService.getData(from, to).then(setData).catch(() => {});
+  }, [from, to]);
 
   return (
     <>

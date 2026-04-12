@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
-import { mockCourier } from '@/services/portal_mockData';
+import { portalCourierService, type CourierProfile } from '@/services/portal_courierService';
 
 const NAV_ITEMS = [
   { path: '/portal/dashboard', label: 'Home', icon: '🏠' },
@@ -10,12 +10,33 @@ const NAV_ITEMS = [
   { path: '/portal/invoicing', label: 'Invoicing', icon: '💰' },
 ];
 
+// Module-level cache so profile is fetched once per session
+let _cachedProfile: CourierProfile | null = null;
+
 export default function PortalLayout() {
   const navigate = useNavigate();
   const location = useLocation();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [profile, setProfile] = useState<CourierProfile | null>(_cachedProfile);
+
+  useEffect(() => {
+    if (_cachedProfile) return; // Already cached
+    portalCourierService.getProfile().then(p => {
+      _cachedProfile = p;
+      setProfile(p);
+    }).catch(err => {
+      console.error('PortalLayout: failed to load profile', err);
+    });
+  }, []);
 
   const currentNav = NAV_ITEMS.find(n => location.pathname.startsWith(n.path));
+
+  const firstName = profile?.firstName ?? '';
+  const surname = profile?.surname ?? '';
+  const initials = firstName && surname ? `${firstName[0]}${surname[0]}` : '?';
+  const displayName = firstName && surname ? `${firstName} ${surname}` : 'Courier';
+  const displayCode = profile?.code ?? '';
+  const isMasterCourier = profile?.isMasterCourier ?? false;
 
   return (
     <div className="min-h-screen bg-surface-light flex flex-col">
@@ -27,7 +48,7 @@ export default function PortalLayout() {
         </div>
         <div className="flex items-center gap-2">
           <div className="w-8 h-8 rounded-full bg-brand-cyan flex items-center justify-center text-xs font-bold text-brand-dark">
-            {mockCourier.firstName[0]}{mockCourier.surname[0]}
+            {initials}
           </div>
         </div>
       </header>
@@ -38,8 +59,8 @@ export default function PortalLayout() {
           <div className="fixed inset-0 bg-black/40 z-40" onClick={() => setMenuOpen(false)} />
           <nav className="fixed left-0 top-0 bottom-0 w-64 bg-brand-dark z-50 pt-4 animate-slideIn">
             <div className="px-4 pb-4 border-b border-white/10">
-              <div className="text-white font-bold">{mockCourier.firstName} {mockCourier.surname}</div>
-              <div className="text-white/60 text-xs">{mockCourier.code}</div>
+              <div className="text-white font-bold">{displayName}</div>
+              {displayCode && <div className="text-white/60 text-xs">{displayCode}</div>}
             </div>
             <div className="py-2">
               {NAV_ITEMS.map(item => (
@@ -56,7 +77,7 @@ export default function PortalLayout() {
                   {item.label}
                 </button>
               ))}
-              {mockCourier.isMasterCourier && (
+              {isMasterCourier && (
                 <button
                   onClick={() => { navigate('/portal/contractors'); setMenuOpen(false); }}
                   className={`w-full text-left px-4 py-3 flex items-center gap-3 text-sm transition-colors ${

@@ -64,7 +64,8 @@ function ConfidenceBadge({ confidence }: { confidence: number }) {
 
 function QuickAddForm({ onCancel }: { onCancel: () => void }) {
   const navigate = useNavigate();
-  const fleets = fleetService.getAll();
+  const [fleets, setFleets] = useState<import('@/services/np_fleetService').Fleet[]>([]);
+  useEffect(() => { fleetService.getAll().then(setFleets); }, []);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     firstName: '', surname: '', email: '', mobile: '', company: '',
@@ -168,8 +169,12 @@ export default function AddCourier() {
   const [mode, setMode] = useState<'pipeline' | 'quick' | null>(initialMode);
   const navigate = useNavigate();
   const { role } = useRole();
-  const masters = courierService.getMasters();
-  const fleets = fleetService.getAll();
+  const [masters, setMasters] = useState<import('@/types').Courier[]>([]);
+  const [fleets, setFleets] = useState<import('@/services/np_fleetService').Fleet[]>([]);
+  useEffect(() => {
+    courierService.getMasters().then(setMasters);
+    fleetService.getAll().then(setFleets);
+  }, []);
   const { types: docTypes } = useDocumentTypes();
   const activeTypes = docTypes.filter(dt => dt.active && (dt.appliesTo === 'ActiveCourier' || dt.appliesTo === 'Both'));
 

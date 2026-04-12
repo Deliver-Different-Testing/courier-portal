@@ -1,89 +1,85 @@
+import api from './np_api';
 import type { CourierApplicant, ApplicantFilter, PipelineSummary } from '@/types';
-import { mockApplicants, mockPipelineSummary } from './np_mockData';
 
+/**
+ * @backend-needed GET /v1/np/applicants — Loc: build this endpoint
+ * @backend-needed GET /v1/np/pipeline — Loc: build this endpoint
+ */
 export const recruitmentService = {
-  getApplicants: (filters?: ApplicantFilter): CourierApplicant[] => {
-    let result = [...mockApplicants];
-    if (filters?.stage) result = result.filter(a => a.pipelineStage === filters.stage);
-    if (filters?.search) {
-      const q = filters.search.toLowerCase();
-      result = result.filter(a =>
-        `${a.firstName} ${a.lastName} ${a.email}`.toLowerCase().includes(q)
-      );
+  /** @backend-needed GET /v1/np/applicants */
+  async getApplicants(filters?: ApplicantFilter): Promise<CourierApplicant[]> {
+    try {
+      const params: Record<string, string> = {};
+      if (filters?.stage) params.stage = filters.stage;
+      if (filters?.search) params.search = filters.search;
+      const { data } = await api.get<CourierApplicant[]>('/v1/np/applicants', { params });
+      return data ?? [];
+    } catch (e: any) {
+      if (e?.response?.status === 404 || e?.code === 'ERR_NETWORK') {
+        // FALLBACK: returns empty array until backend is implemented
+        return [];
+      }
+      console.error('recruitmentService.getApplicants failed:', e);
+      return [];
     }
+  },
+
+  /** @backend-needed GET /v1/np/applicants/{id} */
+  async getApplicantById(id: number): Promise<CourierApplicant | undefined> {
+    try {
+      const { data } = await api.get<CourierApplicant>(`/v1/np/applicants/${id}`);
+      return data;
+    } catch (e) {
+      console.error(`recruitmentService.getApplicantById(${id}) failed:`, e);
+      return undefined;
+    }
+  },
+
+  /** @backend-needed GET /v1/np/pipeline */
+  async getPipelineSummary(): Promise<PipelineSummary[]> {
+    try {
+      const { data } = await api.get<PipelineSummary[]>('/v1/np/pipeline');
+      return data ?? [];
+    } catch (e: any) {
+      if (e?.response?.status === 404 || e?.code === 'ERR_NETWORK') {
+        // FALLBACK: returns empty array until backend is implemented
+        return [];
+      }
+      console.error('recruitmentService.getPipelineSummary failed:', e);
+      return [];
+    }
+  },
+
+  /** @backend-needed POST /v1/np/applicants */
+  async createApplicant(data: Partial<CourierApplicant>): Promise<CourierApplicant> {
+    const { data: result } = await api.post<CourierApplicant>('/v1/np/applicants', data);
     return result;
   },
 
-  getApplicantById: (id: number): CourierApplicant | undefined =>
-    mockApplicants.find(a => a.id === id),
-
-  getPipelineSummary: (): PipelineSummary[] => mockPipelineSummary,
-
-  createApplicant: (data: Partial<CourierApplicant>): CourierApplicant => {
-    const newApplicant: CourierApplicant = {
-      id: mockApplicants.length + 1,
-      tenantId: 1,
-      regionId: null,
-      email: data.email || '',
-      firstName: data.firstName || '',
-      lastName: data.lastName || '',
-      phone: data.phone || null,
-      address: data.address || null,
-      city: data.city || null,
-      state: data.state || null,
-      postcode: data.postcode || null,
-      vehicleType: data.vehicleType || null,
-      vehicleMake: data.vehicleMake || null,
-      vehicleModel: data.vehicleModel || null,
-      vehicleYear: data.vehicleYear || null,
-      vehiclePlate: data.vehiclePlate || null,
-      bankAccountName: data.bankAccountName || null,
-      bankAccountNumber: data.bankAccountNumber || null,
-      bankBSB: data.bankBSB || null,
-      nextOfKinName: data.nextOfKinName || null,
-      nextOfKinPhone: data.nextOfKinPhone || null,
-      nextOfKinRelationship: data.nextOfKinRelationship || null,
-      pipelineStage: 'Registration',
-      declarationSigned: false,
-      declarationSignedDate: null,
-      declarationSignatureS3Key: null,
-      rejectedDate: null,
-      rejectedReason: null,
-      approvedAsCourierId: null,
-      createdDate: new Date().toISOString(),
-      modifiedDate: null,
-      notes: data.notes || null,
-    };
-    mockApplicants.push(newApplicant);
-    return newApplicant;
-  },
-
-  advanceStage: (id: number): CourierApplicant | undefined => {
-    const stages = ['Registration', 'Email Verification', 'Profile', 'Documentation', 'Declaration/Contract', 'Training', 'Approval'] as const;
-    const a = mockApplicants.find(x => x.id === id);
-    if (!a) return undefined;
-    const idx = stages.indexOf(a.pipelineStage);
-    if (idx < stages.length - 1) {
-      a.pipelineStage = stages[idx + 1];
-      a.modifiedDate = new Date().toISOString();
+  /** @backend-needed POST /v1/np/applicants/{id}/advance — Loc: advance to next stage */
+  async advanceStage(id: number): Promise<void> {
+    try {
+      await api.post(`/v1/np/applicants/${id}/advance`, {});
+    } catch (e) {
+      console.error(`recruitmentService.advanceStage(${id}) failed:`, e);
     }
-    return a;
   },
 
-  rejectApplicant: (id: number, reason: string): CourierApplicant | undefined => {
-    const a = mockApplicants.find(x => x.id === id);
-    if (!a) return undefined;
-    a.rejectedDate = new Date().toISOString();
-    a.rejectedReason = reason;
-    return a;
+  /** @backend-needed POST /v1/np/applicants/{id}/reject — Loc: reject applicant */
+  async rejectApplicant(id: number, reason: string): Promise<void> {
+    try {
+      await api.post(`/v1/np/applicants/${id}/reject`, { reason });
+    } catch (e) {
+      console.error(`recruitmentService.rejectApplicant(${id}) failed:`, e);
+    }
   },
 
-  approveApplicant: (id: number): CourierApplicant | undefined => {
-    const a = mockApplicants.find(x => x.id === id);
-    if (!a) return undefined;
-    a.pipelineStage = 'Approval';
-    a.approvedAsCourierId = 100 + id;
-    a.modifiedDate = new Date().toISOString();
-    return a;
+  /** @backend-needed POST /v1/np/applicants/{id}/approve — Loc: approve applicant */
+  async approveApplicant(id: number): Promise<void> {
+    try {
+      await api.post(`/v1/np/applicants/${id}/approve`, {});
+    } catch (e) {
+      console.error(`recruitmentService.approveApplicant(${id}) failed:`, e);
+    }
   },
 };

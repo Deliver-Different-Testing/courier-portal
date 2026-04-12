@@ -1,61 +1,64 @@
+/** @backend Loc: register this service in Program.cs */
+import api from './np_api';
 import type { RecruitmentStageConfig } from '@/types';
-import { mockRecruitmentStages } from './np_mockData';
 
+/**
+ * Recruitment stage settings — wired to RecruitmentSettingsController.
+ * Backend route: api/v1/settings/recruitment-stages
+ */
 export const recruitmentSettingsService = {
-  getStages: (): RecruitmentStageConfig[] => [...mockRecruitmentStages].sort((a, b) => a.sortOrder - b.sortOrder),
-
-  createStage: (data: Partial<RecruitmentStageConfig>): RecruitmentStageConfig => {
-    const stage: RecruitmentStageConfig = {
-      id: mockRecruitmentStages.length + 1,
-      tenantId: 1,
-      stageName: data.stageName || '',
-      sortOrder: data.sortOrder || mockRecruitmentStages.length + 1,
-      enabled: data.enabled ?? true,
-      mandatory: data.mandatory ?? true,
-      description: data.description || null,
-      createdDate: new Date().toISOString(),
-    };
-    mockRecruitmentStages.push(stage);
-    return stage;
+  /** @backend GET /api/v1/settings/recruitment-stages */
+  async getStages(): Promise<RecruitmentStageConfig[]> {
+    try {
+      const { data } = await api.get<RecruitmentStageConfig[]>('/v1/settings/recruitment-stages');
+      return (data ?? []).sort((a, b) => a.sortOrder - b.sortOrder);
+    } catch (e) {
+      console.error('recruitmentSettingsService.getStages failed:', e);
+      return [];
+    }
   },
 
-  updateStage: (id: number, data: Partial<RecruitmentStageConfig>): RecruitmentStageConfig | undefined => {
-    const s = mockRecruitmentStages.find(x => x.id === id);
-    if (!s) return undefined;
-    Object.assign(s, data);
-    return s;
+  /** @backend POST /api/v1/settings/recruitment-stages */
+  async createStage(dto: Partial<RecruitmentStageConfig>): Promise<RecruitmentStageConfig | undefined> {
+    try {
+      const { data } = await api.post<RecruitmentStageConfig>('/v1/settings/recruitment-stages', dto);
+      return data;
+    } catch (e) {
+      console.error('recruitmentSettingsService.createStage failed:', e);
+      return undefined;
+    }
   },
 
-  deleteStage: (id: number): boolean => {
-    const idx = mockRecruitmentStages.findIndex(x => x.id === id);
-    if (idx < 0) return false;
-    mockRecruitmentStages.splice(idx, 1);
-    return true;
+  /** @backend PUT /api/v1/settings/recruitment-stages/{id} */
+  async updateStage(id: number, dto: Partial<RecruitmentStageConfig>): Promise<RecruitmentStageConfig | undefined> {
+    try {
+      const { data } = await api.put<RecruitmentStageConfig>(`/v1/settings/recruitment-stages/${id}`, dto);
+      return data;
+    } catch (e) {
+      console.error('recruitmentSettingsService.updateStage failed:', e);
+      return undefined;
+    }
   },
 
-  seedDefaults: (): RecruitmentStageConfig[] => {
-    const defaults = [
-      { name: 'Registration', desc: 'Initial applicant registration' },
-      { name: 'Email Verification', desc: 'Verify applicant email address' },
-      { name: 'Profile', desc: 'Complete personal and vehicle profile' },
-      { name: 'Documentation', desc: 'Upload required documents' },
-      { name: 'Declaration/Contract', desc: 'Sign declaration and contract' },
-      { name: 'Training', desc: 'Complete required training modules' },
-      { name: 'Approval', desc: 'Final review and approval' },
-    ];
-    mockRecruitmentStages.length = 0;
-    defaults.forEach((d, i) => {
-      mockRecruitmentStages.push({
-        id: i + 1,
-        tenantId: 1,
-        stageName: d.name,
-        sortOrder: i + 1,
-        enabled: true,
-        mandatory: true,
-        description: d.desc,
-        createdDate: new Date().toISOString(),
-      });
-    });
-    return [...mockRecruitmentStages];
+  /** @backend DELETE /api/v1/settings/recruitment-stages/{id} */
+  async deleteStage(id: number): Promise<boolean> {
+    try {
+      await api.delete(`/v1/settings/recruitment-stages/${id}`);
+      return true;
+    } catch (e) {
+      console.error('recruitmentSettingsService.deleteStage failed:', e);
+      return false;
+    }
+  },
+
+  /** @backend POST /api/v1/settings/recruitment-stages/seed */
+  async seedStages(): Promise<RecruitmentStageConfig[]> {
+    try {
+      const { data } = await api.post<RecruitmentStageConfig[]>('/v1/settings/recruitment-stages/seed', {});
+      return data ?? [];
+    } catch (e) {
+      console.error('recruitmentSettingsService.seedStages failed:', e);
+      return [];
+    }
   },
 };

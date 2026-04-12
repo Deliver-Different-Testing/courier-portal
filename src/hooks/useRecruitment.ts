@@ -1,37 +1,39 @@
-// @ts-nocheck
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { recruitmentService } from '@/services/np_recruitmentService';
-import type { ApplicantFilter } from '@/types';
+import type { CourierApplicant, ApplicantFilter, PipelineSummary } from '@/types';
 
 export function useRecruitment() {
+  const [applicants, setApplicants] = useState<CourierApplicant[]>([]);
+  const [pipelineSummary, setPipelineSummary] = useState<PipelineSummary[]>([]);
   const [filters, setFilters] = useState<ApplicantFilter>({});
   const [refreshKey, setRefreshKey] = useState(0);
 
-  const applicants = useMemo(
-    () => recruitmentService.getApplicants(filters),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [filters, refreshKey]
-  );
+  useEffect(() => {
+    recruitmentService.getApplicants(filters).then(setApplicants).catch(() => setApplicants([]));
+  }, [filters, refreshKey]);
 
-  const pipelineSummary = useMemo(
-    () => recruitmentService.getPipelineSummary(),
-    [refreshKey]
-  );
+  useEffect(() => {
+    recruitmentService.getPipelineSummary().then(setPipelineSummary).catch(() => setPipelineSummary([]));
+  }, [refreshKey]);
 
   const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
-  const advanceStage = useCallback((id: number) => {
-    recruitmentService.advanceStage(id);
+  // Stub mutations — these endpoints don't exist on the backend yet
+  const advanceStage = useCallback(async (id: number) => {
+    // @backend-needed POST /v1/np/applicants/{id}/advance
+    console.log('advanceStage stub:', id);
     refresh();
   }, [refresh]);
 
-  const rejectApplicant = useCallback((id: number, reason: string) => {
-    recruitmentService.rejectApplicant(id, reason);
+  const rejectApplicant = useCallback(async (id: number, _reason: string) => {
+    // @backend-needed POST /v1/np/applicants/{id}/reject
+    console.log('rejectApplicant stub:', id);
     refresh();
   }, [refresh]);
 
-  const approveApplicant = useCallback((id: number) => {
-    recruitmentService.approveApplicant(id);
+  const approveApplicant = useCallback(async (id: number) => {
+    // @backend-needed POST /v1/np/applicants/{id}/approve
+    console.log('approveApplicant stub:', id);
     refresh();
   }, [refresh]);
 
@@ -48,12 +50,13 @@ export function useRecruitment() {
 }
 
 export function useApplicant(id: number) {
+  const [applicant, setApplicant] = useState<CourierApplicant | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
-  const applicant = useMemo(
-    () => recruitmentService.getApplicantById(id),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [id, refreshKey]
-  );
   const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
+
+  useEffect(() => {
+    recruitmentService.getApplicantById(id).then(a => setApplicant(a ?? null)).catch(() => setApplicant(null));
+  }, [id, refreshKey]);
+
   return { applicant, refresh };
 }

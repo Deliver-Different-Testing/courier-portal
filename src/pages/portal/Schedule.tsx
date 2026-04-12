@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { portalCourierService } from '@/services/portal_courierService';
-import type { Schedule, TimeSlot } from '@/services/portal_mockData';
+import type { Schedule, TimeSlot } from '@/services/portal_courierService';
 
 type Tab = 'pending' | 'available' | 'unavailable' | 'cancelled';
 const TABS: { key: Tab; label: string; statusId: number | null }[] = [

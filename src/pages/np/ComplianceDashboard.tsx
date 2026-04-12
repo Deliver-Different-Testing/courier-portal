@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useComplianceDashboard, useComplianceAlerts } from '@/hooks/useCompliance';
 import { complianceProfileService } from '@/services/np_complianceProfileService';
-import { quizService } from '@/services/np_quizService';
+import { quizService, getQuizForDocTypeSync, hasPassedQuizSync, getAttemptCountSync } from '@/services/np_quizService';
 import StatCard from '@/components/common/StatCard';
 import type { ComplianceAlertFilter, ComplianceProfile } from '@/types';
 
@@ -125,7 +125,7 @@ export default function ComplianceDashboard() {
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
 
   useEffect(() => {
-    setProfiles(complianceProfileService.getAll().filter(p => p.active));
+    complianceProfileService.getAll().then(all => setProfiles(all.filter(p => p.active)));
   }, []);
 
   // Build alert filters from drilldown
@@ -498,10 +498,10 @@ export default function ComplianceDashboard() {
                           // Find quiz for this doc type
                           const docTypeReq = allProfiles.flatMap(p => p.requirements).find(r => r.documentTypeName === alert.documentType);
                           if (!docTypeReq) return null;
-                          const quiz = quizService.getQuizForDocType(docTypeReq.documentTypeId);
+                          const quiz = getQuizForDocTypeSync(docTypeReq.documentTypeId);
                           if (!quiz) return null;
-                          const passed = quizService.hasPassedQuiz(quiz.id, alert.courierId);
-                          const attempts = quizService.getAttemptCount(quiz.id, alert.courierId);
+                          const passed = hasPassedQuizSync(quiz.id, alert.courierId);
+                          const attempts = getAttemptCountSync(quiz.id, alert.courierId);
                           return (
                             <div className="text-xs mt-0.5">
                               {passed ? (

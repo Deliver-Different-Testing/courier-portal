@@ -33,14 +33,27 @@ export default function CourierSetup({ onSelectCourier }: Props) {
   const initialTab = (searchParams.get('tab') as typeof tabKeys[number]) || 'profile';
   const [tab, setTab] = useState<typeof tabKeys[number]>(tabKeys.includes(initialTab as any) ? initialTab : 'profile');
   const [courier, setCourier] = useState<Courier | undefined>();
+  const [masters, setMasters] = useState<Courier[]>([]);
+  const [masterName, setMasterName] = useState<Courier | null | undefined>(null);
 
   useEffect(() => {
     if (id) {
-      const c = courierService.getById(Number(id));
-      setCourier(c);
-      if (c) onSelectCourier(c.id);
+      courierService.getById(Number(id)).then(c => {
+        setCourier(c);
+        if (c) onSelectCourier(c.id);
+      });
     }
   }, [id, onSelectCourier]);
+
+  useEffect(() => {
+    courierService.getMasters().then(setMasters);
+  }, []);
+
+  useEffect(() => {
+    if (courier?.master) {
+      courierService.getById(courier.master).then(m => setMasterName(m ?? null));
+    }
+  }, [courier?.master]);
 
   if (!courier) {
     return (
@@ -51,8 +64,6 @@ export default function CourierSetup({ onSelectCourier }: Props) {
   }
 
   const c = courier;
-  const masters = courierService.getMasters();
-  const masterName = c.master ? courierService.getById(c.master) : null;
 
   return (
     <>

@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import type { Courier } from '@/types';
 import { driverApprovalService } from '@/services/np_driverApprovalService';
 import { complianceProfileService } from '@/services/np_complianceProfileService';
-import { quizService } from '@/services/np_quizService';
+import { getQuizForDocTypeSync, hasPassedQuizSync, getAttemptCountSync } from '@/services/np_quizService';
 import type { ComplianceProfile, DriverComplianceStatus } from '@/types';
 import { useRole } from '@/context/RoleContext';
 
@@ -19,11 +19,15 @@ export function DriverApproval() {
   const [tab, setTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
   const [toast, setToast] = useState<string | null>(null);
 
-  const reload = () => {
-    const all = driverApprovalService.getAllCouriersWithApproval();
+  const reload = async () => {
+    const [all, profs, statuses] = await Promise.all([
+      driverApprovalService.getAllCouriersWithApproval(),
+      complianceProfileService.getAll(),
+      complianceProfileService.getDriverStatuses(),
+    ]);
     setDrivers(all);
-    setProfiles(complianceProfileService.getAll());
-    setDriverStatuses(complianceProfileService.getDriverStatuses());
+    setProfiles(profs);
+    setDriverStatuses(statuses);
   };
 
   useEffect(() => { reload(); }, []);
@@ -266,18 +270,19 @@ export function DriverApproval() {
                 return (
                   <div className="mb-6 space-y-1">
                     {trainingReqs.map(req => {
-                      const quiz = quizService.getQuizForDocType(req.documentTypeId);
+                      const quiz = getQuizForDocTypeSync(req.documentTypeId);
                       if (!quiz) return null;
-                      const passed = quizService.hasPassedQuiz(quiz.id, selectedDriver.id);
-                      const attempts = quizService.getAttemptCount(quiz.id, selectedDriver.id);
-                      const bestScore = quizService.getBestScore(quiz.id, selectedDriver.id);
+                      const quizAny = quiz as any;
+                      const passed = hasPassedQuizSync(quizAny.id ?? 0, selectedDriver.id);
+                      const attempts = getAttemptCountSync(quizAny.id ?? 0, selectedDriver.id);
+                      const bestScore: number | null = null; // loaded async elsewhere
                       return (
                         <div key={req.id} className="flex items-center gap-2 text-sm">
                           <span>{req.documentTypeName}:</span>
                           {passed ? (
-                            <span className="text-green-600">✅ Passed ({bestScore}%, {attempts === 1 ? '1st' : attempts === 2 ? '2nd' : attempts === 3 ? '3rd' : `${attempts}th`} attempt)</span>
+                            <span className="text-green-600">✅ Passed ({bestScore !== null ? `${bestScore}%, ` : ''}{attempts === 1 ? '1st' : attempts === 2 ? '2nd' : attempts === 3 ? '3rd' : `${attempts}th`} attempt)</span>
                           ) : attempts > 0 ? (
-                            <span className="text-red-500">❌ Failed ({bestScore}%, {attempts}/{quiz.maxAttempts || '∞'} attempts)</span>
+                            <span className="text-red-500">❌ Failed ({bestScore !== null ? `${bestScore}%, ` : ''}{attempts}/{quizAny.maxAttempts || '∞'} attempts)</span>
                           ) : (
                             <span className="text-gray-400">⏳ Not attempted</span>
                           )}

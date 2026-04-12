@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useDocumentTypes } from '@/hooks/useDocuments';
 import { documentTypeService } from '@/services/np_documentService';
-import { quizService } from '@/services/np_quizService';
+import { quizService, getQuizForDocTypeSync, getAttemptCountSync } from '@/services/np_quizService';
 import type { DocumentType, DocumentCategory, DocumentAppliesTo, DocumentPurpose } from '@/types';
 import QuizBuilder from './QuizBuilder';
 
@@ -242,9 +242,9 @@ export default function DocumentTypeSettings() {
                     {dt.purpose === 'Training' ? (
                       dt.quizRequired ? (
                         (() => {
-                          const quiz = quizService.getQuizForDocType(dt.id);
+                          const quiz = getQuizForDocTypeSync(dt.id);
                           return quiz ? (
-                            <span title={`Quiz: ${quiz.questions.length} questions`} className="cursor-help">📝</span>
+                            <span title={`Quiz: ${(quiz as any).questions?.length ?? '?'} questions`} className="cursor-help">📝</span>
                           ) : (
                             <span title="Quiz required but not yet created" className="text-amber-500 cursor-help">⚠️</span>
                           );
@@ -444,16 +444,16 @@ export default function DocumentTypeSettings() {
                   </label>
                   {/* Quiz Builder (only when quiz required and editing existing) */}
                   {editing.quizRequired && editing.mode === 'edit' && editing.id && (() => {
-                    const existingQuiz = quizService.getQuizForDocType(editing.id);
-                    const attemptCount = existingQuiz ? quizService.getAttempts(existingQuiz.id).length : 0;
+                    const existingQuiz = getQuizForDocTypeSync(editing.id);
+                    const attemptCount = existingQuiz ? getAttemptCountSync((existingQuiz as any).id ?? 0, 0) : 0;
                     return (
                       <div className="border-t border-purple-200 pt-3">
                         <div className="text-xs font-medium text-purple-700 uppercase tracking-wide mb-2">Quiz</div>
                         {existingQuiz ? (
                           <div className="flex items-center justify-between">
                             <div className="text-sm text-text-primary">
-                              <span className="font-medium">{existingQuiz.questions.length} questions</span>
-                              <span className="text-text-secondary"> · Pass mark {existingQuiz.passMarkPercent}% · {attemptCount} attempts</span>
+                              <span className="font-medium">{(existingQuiz as any).questions?.length ?? '?'} questions</span>
+                              <span className="text-text-secondary"> · Pass mark {(existingQuiz as any).passMarkPercent}% · {attemptCount} attempts</span>
                             </div>
                             <button onClick={() => setQuizBuilderDocTypeId(editing.id!)}
                               className="text-sm text-brand-cyan font-medium hover:underline">Edit Quiz</button>

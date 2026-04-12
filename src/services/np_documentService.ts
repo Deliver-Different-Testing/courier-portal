@@ -1,3 +1,4 @@
+import api from './np_api';
 import type {
   DocumentType,
   CourierDocument,
@@ -8,168 +9,198 @@ import type {
   DocumentPurpose,
 } from '@/types';
 
-// ─── localStorage-backed mock for static demo ───
+// Re-export for consumers
+export type { DocumentCategory, DocumentAppliesTo, DocumentPurpose };
 
-const STORAGE_KEY = 'np_document_types_v4';
-
-const DEFAULT_SEED: DocumentType[] = [
-  { id: 1, name: "Driver's License", instructions: 'Upload a clear photo of front and back', category: 'Licensing', mandatory: true, active: true, hasExpiry: true, expiryWarningDays: 30, blockOnExpiry: true, appliesTo: 'Both', purpose: 'Compliance', sortOrder: 1, quizRequired: false, hasTemplate: false },
-  { id: 2, name: 'Vehicle Registration', instructions: 'Current vehicle registration certificate', category: 'Vehicle', mandatory: true, active: true, hasExpiry: true, expiryWarningDays: 30, blockOnExpiry: true, appliesTo: 'Both', purpose: 'Compliance', sortOrder: 2, quizRequired: false, hasTemplate: false },
-  { id: 3, name: 'Insurance Certificate', instructions: 'Comprehensive or third-party vehicle insurance', category: 'Insurance', mandatory: false, active: true, hasExpiry: true, expiryWarningDays: 30, blockOnExpiry: false, appliesTo: 'Both', purpose: 'Compliance', sortOrder: 3, quizRequired: false, hasTemplate: false },
-  { id: 4, name: 'WOF Certificate', instructions: 'Warrant of Fitness (NZ only)', category: 'Vehicle', mandatory: true, active: true, hasExpiry: true, expiryWarningDays: 14, blockOnExpiry: true, appliesTo: 'Both', purpose: 'Compliance', sortOrder: 4, quizRequired: false, hasTemplate: false },
-  { id: 5, name: 'DG Certificate', instructions: 'Dangerous Goods handling certificate (medical/DG roles only)', category: 'Licensing', mandatory: false, active: true, hasExpiry: true, expiryWarningDays: 60, blockOnExpiry: true, appliesTo: 'Both', purpose: 'Compliance', sortOrder: 5, quizRequired: false, hasTemplate: false },
-  { id: 6, name: 'Contractor Agreement', instructions: 'Signed independent contractor agreement', category: 'Contract', mandatory: true, active: true, hasExpiry: false, expiryWarningDays: 0, blockOnExpiry: false, appliesTo: 'Applicant', purpose: 'Compliance', sortOrder: 6, quizRequired: false, hasTemplate: true },
-  { id: 7, name: 'Safety Induction Video', instructions: 'Watch the safety induction video and sign off', category: 'Other', mandatory: true, active: true, hasExpiry: false, expiryWarningDays: 0, blockOnExpiry: false, appliesTo: 'ActiveCourier', purpose: 'Training', sortOrder: 10, quizRequired: true, hasTemplate: false, contentUrl: 'https://example.com/safety-induction', estimatedMinutes: 15 },
-  { id: 8, name: 'Company Policies & Procedures', instructions: 'Read and acknowledge company policies', category: 'Other', mandatory: true, active: true, hasExpiry: false, expiryWarningDays: 0, blockOnExpiry: false, appliesTo: 'ActiveCourier', purpose: 'Training', sortOrder: 11, quizRequired: true, hasTemplate: true, contentUrl: '', estimatedMinutes: 20 },
-  { id: 9, name: 'Customer Service Standards', instructions: 'Review customer service expectations and best practices', category: 'Other', mandatory: false, active: true, hasExpiry: false, expiryWarningDays: 0, blockOnExpiry: false, appliesTo: 'ActiveCourier', purpose: 'Training', sortOrder: 12, quizRequired: false, hasTemplate: false, contentUrl: 'https://example.com/customer-service', estimatedMinutes: 10 },
-  // NP Company-Level Documents
-  { id: 10, name: 'Business Registration', instructions: 'Company registration / incorporation certificate', category: 'Licensing', mandatory: true, active: true, hasExpiry: false, expiryWarningDays: 0, blockOnExpiry: false, appliesTo: 'NP', purpose: 'Compliance', sortOrder: 20, quizRequired: false, hasTemplate: false },
-  { id: 11, name: 'Proof of Insurance', instructions: 'General liability & commercial vehicle insurance', category: 'Insurance', mandatory: true, active: true, hasExpiry: true, expiryWarningDays: 30, blockOnExpiry: true, appliesTo: 'NP', purpose: 'Compliance', sortOrder: 21, quizRequired: false, hasTemplate: false },
-  { id: 12, name: 'Workers Compensation Certificate', instructions: 'Current workers comp certificate of currency', category: 'Insurance', mandatory: true, active: true, hasExpiry: true, expiryWarningDays: 30, blockOnExpiry: true, appliesTo: 'NP', purpose: 'Compliance', sortOrder: 22, quizRequired: false, hasTemplate: false },
-  { id: 13, name: 'Operating Authority', instructions: 'DOT / MC number or state operating authority', category: 'Licensing', mandatory: true, active: true, hasExpiry: true, expiryWarningDays: 60, blockOnExpiry: true, appliesTo: 'NP', purpose: 'Compliance', sortOrder: 23, quizRequired: false, hasTemplate: false },
-  { id: 14, name: 'Service Agreement', instructions: 'Signed NP service agreement with tenant', category: 'Contract', mandatory: true, active: true, hasExpiry: false, expiryWarningDays: 0, blockOnExpiry: false, appliesTo: 'NP', purpose: 'Compliance', sortOrder: 24, quizRequired: false, hasTemplate: true },
-  { id: 15, name: 'W-9 / Tax ID', instructions: 'Tax identification for payment processing', category: 'Other', mandatory: true, active: true, hasExpiry: false, expiryWarningDays: 0, blockOnExpiry: false, appliesTo: 'NP', purpose: 'Compliance', sortOrder: 25, quizRequired: false, hasTemplate: false },
-  { id: 16, name: 'References', instructions: 'Business references from existing clients', category: 'Other', mandatory: false, active: true, hasExpiry: false, expiryWarningDays: 0, blockOnExpiry: false, appliesTo: 'NP', purpose: 'Compliance', sortOrder: 26, quizRequired: false, hasTemplate: false },
-  { id: 17, name: 'Fleet Inventory', instructions: 'List of vehicles available for service', category: 'Vehicle', mandatory: false, active: true, hasExpiry: false, expiryWarningDays: 0, blockOnExpiry: false, appliesTo: 'NP', purpose: 'Compliance', sortOrder: 27, quizRequired: false, hasTemplate: false },
-];
-
-function loadTypes(): DocumentType[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed.length > 0) return parsed;
-    }
-  } catch { /* ignore */ }
-  // Seed defaults on first load
-  saveTypes(DEFAULT_SEED);
-  return [...DEFAULT_SEED];
-}
-
-function saveTypes(types: DocumentType[]): void {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(types));
-}
-
-function nextId(types: DocumentType[]): number {
-  return types.length > 0 ? Math.max(...types.map(t => t.id)) + 1 : 1;
-}
-
-// Simulate async
-const delay = (ms = 50) => new Promise(r => setTimeout(r, ms));
-
+/**
+ * @backend-needed GET /v1/np/document-types — Loc: build this endpoint
+ * @backend-needed POST /v1/np/document-types — Loc: build this endpoint
+ * @backend-needed PUT /v1/np/document-types/{id} — Loc: build this endpoint
+ * @backend-needed DELETE /v1/np/document-types/{id} — Loc: build this endpoint
+ */
 export const documentTypeService = {
+  /** @backend-needed GET /v1/np/document-types */
   async getAll(): Promise<DocumentType[]> {
-    await delay();
-    return loadTypes().filter(t => t.active);
-  },
-
-  async getById(id: number): Promise<DocumentType> {
-    await delay();
-    const found = loadTypes().find(t => t.id === id);
-    if (!found) throw new Error('Not found');
-    return found;
-  },
-
-  async create(dto: Partial<DocumentType>): Promise<DocumentType> {
-    await delay();
-    const types = loadTypes();
-    const newType: DocumentType = {
-      id: nextId(types),
-      name: dto.name || '',
-      instructions: dto.instructions || '',
-      category: dto.category || 'Other',
-      mandatory: dto.mandatory ?? false,
-      active: true,
-      hasExpiry: dto.hasExpiry ?? false,
-      expiryWarningDays: dto.expiryWarningDays ?? 30,
-      blockOnExpiry: dto.blockOnExpiry ?? false,
-      appliesTo: dto.appliesTo || 'Both',
-      purpose: dto.purpose || 'Compliance',
-      sortOrder: dto.sortOrder ?? types.length + 1,
-      quizRequired: dto.quizRequired ?? false,
-      hasTemplate: false,
-      contentUrl: dto.contentUrl,
-      estimatedMinutes: dto.estimatedMinutes,
-    };
-    types.push(newType);
-    saveTypes(types);
-    return newType;
-  },
-
-  async update(id: number, dto: Partial<DocumentType>): Promise<DocumentType> {
-    await delay();
-    const types = loadTypes();
-    const idx = types.findIndex(t => t.id === id);
-    if (idx === -1) throw new Error('Not found');
-    types[idx] = { ...types[idx], ...dto, id };
-    saveTypes(types);
-    return types[idx];
-  },
-
-  async deactivate(id: number): Promise<void> {
-    await delay();
-    const types = loadTypes();
-    const idx = types.findIndex(t => t.id === id);
-    if (idx !== -1) {
-      types[idx].active = false;
-      saveTypes(types);
+    try {
+      const { data } = await api.get<DocumentType[]>('/v1/np/document-types');
+      return data ?? [];
+    } catch (e: any) {
+      if (e?.response?.status === 404 || e?.code === 'ERR_NETWORK') {
+        // FALLBACK: returns empty array until backend is implemented
+        return [];
+      }
+      console.error('documentTypeService.getAll failed:', e);
+      return [];
     }
   },
 
-  async downloadTemplate(_id: number): Promise<Blob> {
-    return new Blob(['template placeholder'], { type: 'application/pdf' });
-  },
-
-  async uploadTemplate(id: number, _file: File): Promise<{ s3Key: string; fileName: string }> {
-    await delay();
-    const types = loadTypes();
-    const idx = types.findIndex(t => t.id === id);
-    if (idx !== -1) {
-      types[idx].hasTemplate = true;
-      saveTypes(types);
+  /** @backend-needed GET /v1/np/document-types/{id} */
+  async getById(id: number): Promise<DocumentType | undefined> {
+    try {
+      const { data } = await api.get<DocumentType>(`/v1/np/document-types/${id}`);
+      return data;
+    } catch (e) {
+      console.error(`documentTypeService.getById(${id}) failed:`, e);
+      return undefined;
     }
-    return { s3Key: `templates/${id}`, fileName: _file.name };
   },
 
+  /** @backend-needed POST /v1/np/document-types */
+  async create(docType: Omit<DocumentType, 'id'>): Promise<DocumentType> {
+    const { data } = await api.post<DocumentType>('/v1/np/document-types', docType);
+    return data;
+  },
+
+  /** @backend-needed PUT /v1/np/document-types/{id} */
+  async update(id: number, updates: Partial<DocumentType>): Promise<DocumentType | undefined> {
+    try {
+      const { data } = await api.put<DocumentType>(`/v1/np/document-types/${id}`, updates);
+      return data;
+    } catch (e) {
+      console.error(`documentTypeService.update(${id}) failed:`, e);
+      return undefined;
+    }
+  },
+
+  /** @backend-needed DELETE /v1/np/document-types/{id} */
+  async deactivate(id: number): Promise<boolean> {
+    try {
+      await api.delete(`/v1/np/document-types/${id}`);
+      return true;
+    } catch (e) {
+      console.error(`documentTypeService.deactivate(${id}) failed:`, e);
+      return false;
+    }
+  },
+
+  /** @backend-needed PUT /v1/np/document-types/reorder */
+  async reorder(items: { id: number; sortOrder: number }[]): Promise<void> {
+    await api.put('/v1/np/document-types/reorder', items);
+  },
+
+  /** @backend-needed GET /v1/np/document-types/{id}/documents */
+  async getDocumentsForType(docTypeId: number): Promise<CourierDocument[]> {
+    try {
+      const { data } = await api.get<CourierDocument[]>(`/v1/np/document-types/${docTypeId}/documents`);
+      return data ?? [];
+    } catch (e: any) {
+      if (e?.response?.status === 404 || e?.code === 'ERR_NETWORK') {
+        return [];
+      }
+      console.error(`documentTypeService.getDocumentsForType(${docTypeId}) failed:`, e);
+      return [];
+    }
+  },
+
+  /** @backend-needed POST /v1/np/document-types/{id}/extract */
+  async extractDocument(docTypeId: number, file: File): Promise<DocumentExtractionResult | null> {
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const { data } = await api.post<DocumentExtractionResult>(`/v1/np/document-types/${docTypeId}/extract`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
+    } catch (e) {
+      console.error(`documentTypeService.extractDocument(${docTypeId}) failed:`, e);
+      return null;
+    }
+  },
+
+  /** @backend-needed POST /v1/np/document-types/seed */
   async seed(): Promise<DocumentType[]> {
-    await delay();
-    saveTypes(DEFAULT_SEED);
-    return DEFAULT_SEED;
+    try {
+      const { data } = await api.post<DocumentType[]>('/v1/np/document-types/seed', {});
+      return data ?? [];
+    } catch (e) {
+      console.error('documentTypeService.seed failed:', e);
+      return [];
+    }
+  },
+
+  /** @backend-needed POST /v1/np/document-types/{id}/template */
+  async uploadTemplate(id: number, file: File): Promise<boolean> {
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      await api.post(`/v1/np/document-types/${id}/template`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return true;
+    } catch (e) {
+      console.error(`documentTypeService.uploadTemplate(${id}) failed:`, e);
+      return false;
+    }
   },
 };
 
-// --- Courier Document CRUD (mock) ---
-
+/**
+ * @backend-needed GET /v1/np/couriers/{courierId}/documents — Loc: build this endpoint
+ * @backend-needed POST /v1/np/couriers/{courierId}/documents — Loc: build this endpoint
+ * @backend-needed DELETE /v1/np/couriers/{courierId}/documents/{docId} — Loc: build this endpoint
+ * @backend-needed POST /v1/np/couriers/{courierId}/documents/{docId}/verify — Loc: build this endpoint
+ */
 export const courierDocumentService = {
-  async getDocuments(_courierId: number): Promise<CourierDocument[]> {
-    await delay();
-    return [];
+  /** @backend-needed GET /v1/np/couriers/{courierId}/documents */
+  async getDocuments(courierId: number): Promise<CourierDocument[]> {
+    try {
+      const { data } = await api.get<CourierDocument[]>(`/v1/np/couriers/${courierId}/documents`);
+      return data ?? [];
+    } catch (e: any) {
+      if (e?.response?.status === 404 || e?.code === 'ERR_NETWORK') {
+        // FALLBACK: returns empty array until backend is implemented
+        return [];
+      }
+      console.error(`courierDocumentService.getDocuments(${courierId}) failed:`, e);
+      return [];
+    }
   },
 
-  async upload(
-    _courierId: number,
-    _documentTypeId: number,
-    _file: File
-  ): Promise<DocumentUploadResult> {
-    await delay();
-    return { documentId: Date.now(), fileName: _file.name, status: 'Current', extraction: null };
+  /** @backend-needed POST /v1/np/couriers/{courierId}/documents */
+  async upload(courierId: number, documentTypeId: number, file: File): Promise<DocumentUploadResult> {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('documentTypeId', String(documentTypeId));
+    const { data } = await api.post<DocumentUploadResult>(`/v1/np/couriers/${courierId}/documents`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+    return data;
   },
 
-  async getDownloadUrl(_courierId: number, _docId: number): Promise<string> {
-    return '#';
+  /** @backend-needed DELETE /v1/np/couriers/{courierId}/documents/{docId} */
+  async delete(courierId: number, docId: number): Promise<void> {
+    await api.delete(`/v1/np/couriers/${courierId}/documents/${docId}`);
   },
 
-  async delete(_courierId: number, _docId: number): Promise<void> {
-    await delay();
+  /** @backend-needed POST /v1/np/couriers/{courierId}/documents/{docId}/verify */
+  async verify(courierId: number, docId: number): Promise<CourierDocument> {
+    const { data } = await api.post<CourierDocument>(`/v1/np/couriers/${courierId}/documents/${docId}/verify`, {});
+    return data;
   },
 
-  async verify(_courierId: number, _docId: number): Promise<CourierDocument> {
-    await delay();
-    return {} as CourierDocument;
+  /** @backend-needed GET /v1/np/couriers/{courierId}/documents/{docId}/download-url */
+  async getDownloadUrl(courierId: number, docId: number): Promise<string | null> {
+    try {
+      const { data } = await api.get<{ url: string }>(`/v1/np/couriers/${courierId}/documents/${docId}/download-url`);
+      return data.url;
+    } catch (e) {
+      console.error(`courierDocumentService.getDownloadUrl(${courierId}, ${docId}) failed:`, e);
+      return null;
+    }
   },
 
-  async extractOnly(_courierId: number, _file: File): Promise<DocumentExtractionResult> {
-    await delay();
-    return { detectedDocumentType: null, overallConfidence: 0.95, fields: [], detectedExpiryDate: null, autoAccepted: false };
+  /** @backend-needed POST /v1/np/couriers/{courierId}/documents/extract */
+  async extractOnly(courierId: number, file: File): Promise<DocumentExtractionResult | null> {
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const { data } = await api.post<DocumentExtractionResult>(`/v1/np/couriers/${courierId}/documents/extract`, form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      return data;
+    } catch (e) {
+      console.error(`courierDocumentService.extractOnly(${courierId}) failed:`, e);
+      return null;
+    }
   },
 };

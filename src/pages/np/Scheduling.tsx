@@ -1,16 +1,15 @@
-import { useState, useMemo, useCallback } from 'react';
-import {
-  MOCK_LOCATION_SUMMARIES,
-  MOCK_COURIER_RESPONSES_BY_SCHEDULE,
-  MOCK_PENDING_NOTIFICATIONS,
-  LOCATIONS,
-  VEHICLE_TYPES,
-  type LocationSummary,
-  type ScheduleSummary,
-  type TimeSlotVehicle,
-  type CourierBySchedule,
-  type ScheduleDto,
-} from '@/services/np_schedulingMockData';
+import { useState, useMemo, useCallback, useEffect } from 'react';
+import { schedulingService } from '@/services/np_schedulingService';
+import type {
+  LocationSummary,
+  ScheduleSummary,
+  TimeSlotVehicle,
+  CourierBySchedule,
+  ScheduleDto,
+} from '@/services/np_schedulingService';
+
+// Defaults for dropdowns (locations come from API locationSummaries; vehicle types are static)
+const VEHICLE_TYPES = ['Car', 'Van', 'Truck', 'Motorcycle', 'Bicycle', 'E-Bike'];
 
 // ─── Helpers ───
 const fmtTime = (ts: string) => {
@@ -56,7 +55,7 @@ export default function Scheduling() {
   const [showTimeSlotModal, setShowTimeSlotModal] = useState(false);
   const [showTimeSlotAssignModal, setShowTimeSlotAssignModal] = useState(false);
   const [assignCourierId, setAssignCourierId] = useState<number | null>(null);
-  const [pendingNotifications, setPendingNotifications] = useState<ScheduleDto[]>([...MOCK_PENDING_NOTIFICATIONS]);
+  const [pendingNotifications, setPendingNotifications] = useState<ScheduleDto[]>([]);
   const [responseFilter, setResponseFilter] = useState<'all' | 'pending' | 'available' | 'unavailable'>('all');
 
   // Create form
@@ -76,7 +75,12 @@ export default function Scheduling() {
   const [copyLocations, setCopyLocations] = useState<string[]>([]);
 
   // ─── Data ───
-  const locationSummaries: LocationSummary[] = MOCK_LOCATION_SUMMARIES;
+  const [locationSummaries, setLocationSummaries] = useState<LocationSummary[]>([]);
+  useEffect(() => {
+    schedulingService.getLocationSummaries().then(setLocationSummaries);
+    schedulingService.getPendingNotifications().then(setPendingNotifications);
+  }, []);
+
   const currentLocation = locationSummaries[selectedLocationIdx] || null;
   const selectedSchedule = currentLocation?.scheduleSummaries.find(s => s.id === selectedScheduleId) || null;
 
@@ -94,7 +98,15 @@ export default function Scheduling() {
   }, [selectedSchedule, currentLocation]);
 
   // Courier responses
-  const allResponses: CourierBySchedule[] = selectedScheduleId ? (MOCK_COURIER_RESPONSES_BY_SCHEDULE[selectedScheduleId] || []) : [];
+  const [responsesBySchedule, setResponsesBySchedule] = useState<Record<number, CourierBySchedule[]>>({});
+  useEffect(() => {
+    if (!selectedScheduleId) return;
+    if (responsesBySchedule[selectedScheduleId]) return; // already loaded
+    schedulingService.getCourierResponses(selectedScheduleId).then(responses => {
+      setResponsesBySchedule(prev => ({ ...prev, [selectedScheduleId]: responses }));
+    });
+  }, [selectedScheduleId]);
+  const allResponses: CourierBySchedule[] = selectedScheduleId ? (responsesBySchedule[selectedScheduleId] ?? []) : [];
   const pendingCouriers = allResponses.filter(r => !r.scheduleResponse);
   const availableCouriers = allResponses.filter(r => r.scheduleResponse && r.scheduleResponse.statusId === 1);
   const unavailableCouriers = allResponses.filter(r => r.scheduleResponse && r.scheduleResponse.statusId === 2);
@@ -502,7 +514,7 @@ export default function Scheduling() {
                   className="w-full px-3 py-2 text-sm border border-border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-brand-cyan/30"
                 >
                   <option value="">Select...</option>
-                  {LOCATIONS.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
+                  {locationSummaries.map(l => <option key={l.location} value={l.location}>{l.location}</option>)}
                 </select>
               </div>
               <div>
@@ -736,7 +748,7 @@ export default function Scheduling() {
               <div>
                 <label className="block text-xs font-medium text-text-secondary mb-1">Location</label>
                 <select value={tsLocation} onChange={e => setTsLocation(e.target.value)} className="w-full px-3 py-2 text-sm border border-border rounded-lg">
-                  {LOCATIONS.map(l => <option key={l.id} value={l.name}>{l.name}</option>)}
+                  {locationSummaries.map(l => <option key={l.location} value={l.location}>{l.location}</option>)}
                 </select>
               </div>
               <div>

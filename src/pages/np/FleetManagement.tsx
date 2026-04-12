@@ -47,11 +47,25 @@ function FleetList() {
   const navigate = useNavigate();
   const [search, setSearch] = useState('');
   const [fleets, setFleets] = useState<Fleet[]>([]);
+  const [courierCounts, setCourierCounts] = useState<Record<number, number>>({});
+  const [depots, setDepots] = useState<Depot[]>([]);
   const [sortField, setSortField] = useState<'name'>('name');
   const [sortDir, setSortDir] = useState<1 | -1>(1);
 
   useEffect(() => {
-    setFleets(fleetService.search(search));
+    fleetService.getDepots().then(setDepots);
+  }, []);
+
+  useEffect(() => {
+    fleetService.search(search).then(async (list) => {
+      setFleets(list);
+      const counts: Record<number, number> = {};
+      await Promise.all(list.map(async (f) => {
+        const c = await fleetService.getCouriers(f.id);
+        counts[f.id] = c.length;
+      }));
+      setCourierCounts(counts);
+    });
   }, [search]);
 
   const sorted = [...fleets].sort((a, b) => {
@@ -110,7 +124,6 @@ function FleetList() {
           </thead>
           <tbody>
             {sorted.map((fleet) => {
-              const couriers = fleetService.getCouriers(fleet.id);
               return (
                 <tr
                   key={fleet.id}
@@ -118,10 +131,10 @@ function FleetList() {
                   className="border-b border-border last:border-0 hover:bg-brand-cyan/5 cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-3 font-medium text-text-primary">{fleet.name}</td>
-                  <td className="px-4 py-3 text-text-secondary">{fleetService.getDepotName(fleet.depotId)}</td>
+                  <td className="px-4 py-3 text-text-secondary">{fleetService.getDepotName(depots, fleet.depotId)}</td>
                   <td className="px-4 py-3 text-center">
                     <span className="inline-flex items-center justify-center min-w-[24px] px-1.5 py-0.5 rounded-full bg-brand-cyan/10 text-brand-cyan text-xs font-medium">
-                      {couriers.length}
+                      {courierCounts[fleet.id] ?? '…'}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-center"><FlagIcon enabled={fleet.allowCourierPortalAccess} label="Portal Access" /></td>
@@ -157,7 +170,7 @@ function FleetDetail() {
   const [confirmDelete, setConfirmDelete] = useState(false);
 
   useEffect(() => {
-    setDepots(fleetService.getDepots());
+    fleetService.getDepots().then(setDepots);
     if (isNew) {
       const blank: Fleet = {
         id: 0,
@@ -178,12 +191,13 @@ function FleetDetail() {
       setFleet(blank);
       setBackup(blank);
     } else {
-      const f = fleetService.getById(Number(id));
-      if (f) {
-        setFleet({ ...f });
-        setBackup({ ...f });
-        setCouriers(fleetService.getCouriers(f.id));
-      }
+      fleetService.getById(Number(id)).then(f => {
+        if (f) {
+          setFleet({ ...f });
+          setBackup({ ...f });
+          fleetService.getCouriers(f.id).then(setCouriers);
+        }
+      });
     }
   }, [id, isNew]);
 
@@ -198,13 +212,13 @@ function FleetDetail() {
 
   const update = (patch: Partial<Fleet>) => setFleet((prev) => prev ? { ...prev, ...patch } : prev);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!fleet.name.trim()) return;
     if (isNew) {
-      const created = fleetService.create(fleet);
-      navigate(`/fleet-management/${created.id}`, { replace: true });
+      const created = await fleetService.create(fleet);
+      if (created) navigate(`/fleet-management/${created.id}`, { replace: true });
     } else {
-      fleetService.update(fleet.id, fleet);
+      await fleetService.update(fleet.id, fleet);
       setBackup({ ...fleet });
       setEditing(false);
     }
@@ -219,8 +233,8 @@ function FleetDetail() {
     }
   };
 
-  const handleDelete = () => {
-    fleetService.delete(fleet.id);
+  const handleDelete = async () => {
+    await fleetService.delete(fleet.id);
     navigate('/fleet-management');
   };
 

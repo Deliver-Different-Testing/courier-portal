@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { portalCourierService } from '@/services/portal_courierService';
-import type { Run, Job } from '@/services/portal_mockData';
+import type { Run, Job } from '@/services/portal_courierService';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-NZ', { weekday: 'short', month: 'short', day: 'numeric' });

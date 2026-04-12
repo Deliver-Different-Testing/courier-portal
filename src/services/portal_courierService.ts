@@ -1,8 +1,86 @@
+/** @backend Loc: register this service in Program.cs */
 import portalApi from './portal_api';
-import type { CourierProfile, Schedule, Run, ReportSummary, Subcontractor } from './portal_mockData';
 
-// Re-export types so consumers can import from here
-export type { CourierProfile, Schedule, Run, ReportSummary, Subcontractor };
+// ─── Types (inlined here so consumers don't import from portal_mockData) ──
+
+export type Country = 'NZ' | 'US';
+
+export interface CourierProfile {
+  id: number;
+  code: string;
+  firstName: string;
+  surname: string;
+  email: string;
+  mobile: string;
+  taxNo: string;
+  bankAccountNo: string;
+  bankRoutingNumber?: string;
+  address: string;
+  isMasterCourier: boolean;
+  country: Country;
+}
+
+export interface TimeSlot {
+  id: number;
+  bookDateTime: string; // ISO
+  remaining: number | null;
+  wanted: boolean;
+}
+
+export interface Schedule {
+  id: number;
+  name: string;
+  location: string;
+  bookDate: string; // ISO date
+  startTime: string; // HH:mm:ss
+  endTime: string; // HH:mm:ss
+  wanted: number;
+  timeSlots: TimeSlot[];
+  hasTimeSlots: boolean;
+  response: { statusId: 1 | 2 | 3; timeSlot?: TimeSlot } | null;
+}
+
+export interface Job {
+  id: number;
+  pickupAddress: string;
+  deliveryAddress: string;
+  status: 'Pending' | 'In Transit' | 'Delivered' | 'Failed';
+  podSigned: boolean;
+  podSignedAt?: string;
+  notes?: string;
+}
+
+export interface Run {
+  id: number;
+  name: string;
+  location: string;
+  bookDate: string;
+  startTime: string;
+  endTime: string;
+  status: 'Upcoming' | 'In Progress' | 'Completed';
+  jobs: Job[];
+}
+
+export interface ReportSummary {
+  totalRuns: number;
+  totalEarnings: number;
+  avgPerRun: number;
+  thisWeekRuns: number;
+  thisWeekEarnings: number;
+  thisMonthRuns: number;
+  thisMonthEarnings: number;
+  weeklyData: { week: string; runs: number; earnings: number }[];
+}
+
+export interface Subcontractor {
+  id: number;
+  name: string;
+  code: string;
+  phone: string;
+  runsCompleted: number;
+  totalEarnings: number;
+  status: 'Active' | 'Inactive';
+}
 
 export const portalCourierService = {
   /** @backend GET /api/portal/Couriers */

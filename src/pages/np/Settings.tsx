@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import FormField from '@/components/common/FormField';
 import CoverageTag from '@/components/common/CoverageTag';
@@ -158,11 +158,19 @@ interface Props {
 }
 
 export default function Settings({ onUpgrade, isDfAdmin = false }: Props) {
-  const settings = settingsService.getSettings();
   const navigate = useNavigate();
-  const [areas, setAreas] = useState(settings.coverageAreas);
+  const [companySettings, setCompanySettings] = useState({ name: '', code: '', address: '', phone: '', email: '' });
+  const [areas, setAreas] = useState<string[]>([]);
   const [newArea, setNewArea] = useState('');
-  const [notifications, setNotifications] = useState(settings.notifications);
+  const [notifications, setNotifications] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    settingsService.getSettings().then(s => {
+      setCompanySettings({ name: s.name, code: s.code, address: s.address, phone: s.phone, email: s.email });
+      setAreas(s.coverageAreas ?? []);
+      setNotifications(s.notifications ?? {});
+    });
+  }, []);
   const [featureToggles, setFeatureToggles] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(FEATURE_TOGGLES.map(f => [f.key, true]))
   );
@@ -274,11 +282,11 @@ export default function Settings({ onUpgrade, isDfAdmin = false }: Props) {
       <div className="bg-white border border-border rounded-lg p-5 mb-4">
         <h3 className="font-bold mb-3.5">Company Profile</h3>
         <div className="grid grid-cols-2 gap-4">
-          <FormField label="Company Name" value={settings.name} />
-          <FormField label="Company Code" value={settings.code} readonly />
-          <FormField label="Address" value={settings.address} full />
-          <FormField label="Phone" value={settings.phone} />
-          <FormField label="Email" value={settings.email} />
+          <FormField label="Company Name" value={companySettings.name} />
+          <FormField label="Company Code" value={companySettings.code} readonly />
+          <FormField label="Address" value={companySettings.address} full />
+          <FormField label="Phone" value={companySettings.phone} />
+          <FormField label="Email" value={companySettings.email} />
         </div>
         <div className="mt-3">
           <label className="text-xs text-text-secondary uppercase tracking-wide">Company Logo</label>

@@ -1,32 +1,44 @@
-// @ts-nocheck
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { recruitmentSettingsService } from '@/services/np_recruitmentSettingsService';
 import type { RecruitmentStageConfig } from '@/types';
 
 export function useRecruitmentSettings() {
-  const [refreshKey, setRefreshKey] = useState(0);
-  const stages = useMemo(() => recruitmentSettingsService.getStages(), [refreshKey]);
-  const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
+  const [stages, setStages] = useState<RecruitmentStageConfig[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  const createStage = useCallback((data: Partial<RecruitmentStageConfig>) => {
-    recruitmentSettingsService.createStage(data);
-    refresh();
+  const refresh = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await recruitmentSettingsService.getStages();
+      setStages(data);
+    } catch (e) {
+      console.error('useRecruitmentSettings refresh failed:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { refresh(); }, [refresh]);
+
+  const createStage = useCallback(async (data: Partial<RecruitmentStageConfig>) => {
+    await recruitmentSettingsService.createStage(data);
+    await refresh();
   }, [refresh]);
 
-  const updateStage = useCallback((id: number, data: Partial<RecruitmentStageConfig>) => {
-    recruitmentSettingsService.updateStage(id, data);
-    refresh();
+  const updateStage = useCallback(async (id: number, data: Partial<RecruitmentStageConfig>) => {
+    await recruitmentSettingsService.updateStage(id, data);
+    await refresh();
   }, [refresh]);
 
-  const deleteStage = useCallback((id: number) => {
-    recruitmentSettingsService.deleteStage(id);
-    refresh();
+  const deleteStage = useCallback(async (id: number) => {
+    await recruitmentSettingsService.deleteStage(id);
+    await refresh();
   }, [refresh]);
 
-  const seedDefaults = useCallback(() => {
-    recruitmentSettingsService.seedDefaults();
-    refresh();
+  const seedDefaults = useCallback(async () => {
+    await recruitmentSettingsService.seedStages();
+    await refresh();
   }, [refresh]);
 
-  return { stages, createStage, updateStage, deleteStage, seedDefaults, refresh };
+  return { stages, loading, createStage, updateStage, deleteStage, seedDefaults, refresh };
 }

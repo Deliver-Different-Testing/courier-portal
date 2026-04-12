@@ -82,8 +82,12 @@ export default function RecruitmentPipeline() {
   const [activateDepotId, setActivateDepotId] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const depots = fleetService.getDepots();
-  const fleets = fleetService.getAll();
+  const [depots, setDepots] = useState<import('@/services/np_fleetService').Depot[]>([]);
+  const [fleets, setFleets] = useState<import('@/services/np_fleetService').Fleet[]>([]);
+  useEffect(() => {
+    fleetService.getDepots().then(setDepots);
+    fleetService.getAll().then(setFleets);
+  }, []);
   // Openforce check — reads from localStorage like Settings page
   const openforceEnabled = useMemo(() => {
     // In real app this comes from tenant config; for demo just check localStorage

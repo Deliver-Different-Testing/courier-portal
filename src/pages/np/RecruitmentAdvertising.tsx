@@ -195,7 +195,7 @@ export default function RecruitmentAdvertising() {
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
 
   useEffect(() => {
-    setComplianceProfiles(complianceProfileService.getAll().filter(p => p.active));
+    complianceProfileService.getAll().then(all => setComplianceProfiles(all.filter(p => p.active)));
   }, []);
 
   // Logo management — default from tenant DB, per-ad override

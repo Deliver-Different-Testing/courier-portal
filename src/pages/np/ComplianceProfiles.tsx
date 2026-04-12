@@ -347,23 +347,31 @@ export default function ComplianceProfiles() {
   const [duplicateSource, setDuplicateSource] = useState<Partial<ComplianceProfile> | null>(null);
   const [docTypes, setDocTypes] = useState<DocumentType[]>([]);
 
-  useEffect(() => {
-    setProfiles(complianceProfileService.getAll());
-    documentTypeService.getAll().then(dt => setDocTypes(dt));
-  }, []);
+  const [eligibleCounts, setEligibleCounts] = useState<Record<number, number>>({});
 
-  const eligibleCounts = profiles.reduce((acc, p) => {
-    acc[p.id] = complianceProfileService.getEligibleDriverCount(p.id);
-    return acc;
-  }, {} as Record<number, number>);
+  const loadProfiles = async () => {
+    const [profs, dt] = await Promise.all([
+      complianceProfileService.getAll(),
+      documentTypeService.getAll(),
+    ]);
+    setProfiles(profs);
+    setDocTypes(dt);
+    const counts: Record<number, number> = {};
+    await Promise.all(profs.map(async (p) => {
+      counts[p.id] = await complianceProfileService.getEligibleDriverCount(p.id);
+    }));
+    setEligibleCounts(counts);
+  };
 
-  const handleSave = (data: Partial<ComplianceProfile>) => {
+  useEffect(() => { loadProfiles(); }, []);
+
+  const handleSave = async (data: Partial<ComplianceProfile>) => {
     if (editingProfile === 'new' || editingProfile === 'duplicate') {
-      complianceProfileService.create(data as Omit<ComplianceProfile, 'id' | 'createdDate'>);
+      await complianceProfileService.create(data as Omit<ComplianceProfile, 'id' | 'createdDate'>);
     } else if (editingProfile && typeof editingProfile === 'object') {
-      complianceProfileService.update(editingProfile.id, data);
+      await complianceProfileService.update(editingProfile.id, data);
     }
-    setProfiles(complianceProfileService.getAll());
+    await loadProfiles();
     setEditingProfile(null);
   };
 

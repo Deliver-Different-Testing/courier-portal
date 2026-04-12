@@ -1,38 +1,13 @@
+/** @backend Loc: register this service in Program.cs */
+import api from './np_api';
 import type { ComplianceProfile, DriverComplianceStatus } from '@/types';
-import { mockComplianceProfiles, mockDriverComplianceStatuses } from './np_mockData';
-
-const PROFILES_KEY = 'np_compliance_profiles';
-const DRIVER_STATUS_KEY = 'np_driver_compliance_statuses_v2';
-const RECRUITMENT_CONFIG_KEY = 'np_tenant_recruitment_config';
-
-function loadProfiles(): ComplianceProfile[] {
-  try {
-    const raw = localStorage.getItem(PROFILES_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  const seed = [...mockComplianceProfiles];
-  localStorage.setItem(PROFILES_KEY, JSON.stringify(seed));
-  return seed;
-}
-
-function saveProfiles(profiles: ComplianceProfile[]) {
-  localStorage.setItem(PROFILES_KEY, JSON.stringify(profiles));
-}
-
-function loadDriverStatuses(): DriverComplianceStatus[] {
-  try {
-    const raw = localStorage.getItem(DRIVER_STATUS_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  const seed = [...mockDriverComplianceStatuses];
-  localStorage.setItem(DRIVER_STATUS_KEY, JSON.stringify(seed));
-  return seed;
-}
 
 export interface RecruitmentConfig {
   recruitmentViewMode: 'full_pipeline' | 'ready_for_review';
   visibleStages?: string[];
 }
+
+const RECRUITMENT_CONFIG_KEY = 'np_tenant_recruitment_config';
 
 function loadRecruitmentConfig(): RecruitmentConfig {
   try {
@@ -47,62 +22,92 @@ function saveRecruitmentConfig(config: RecruitmentConfig) {
 }
 
 export const complianceProfileService = {
-  getAll(): ComplianceProfile[] {
-    return loadProfiles();
-  },
-
-  getById(id: number): ComplianceProfile | undefined {
-    return loadProfiles().find(p => p.id === id);
-  },
-
-  create(profile: Omit<ComplianceProfile, 'id' | 'createdDate'>): ComplianceProfile {
-    const profiles = loadProfiles();
-    const newId = Math.max(0, ...profiles.map(p => p.id)) + 1;
-    const newProfile: ComplianceProfile = {
-      ...profile,
-      id: newId,
-      createdDate: new Date().toISOString(),
-    };
-    if (newProfile.isDefault) {
-      profiles.forEach(p => p.isDefault = false);
+  /** @backend GET /api/v1/settings/compliance-profiles — Loc: build this endpoint */
+  async getAll(): Promise<ComplianceProfile[]> {
+    try {
+      const { data } = await api.get<ComplianceProfile[]>('/v1/settings/compliance-profiles');
+      return data ?? [];
+    } catch (e) {
+      console.error('complianceProfileService.getAll failed:', e);
+      return [];
     }
-    profiles.push(newProfile);
-    saveProfiles(profiles);
-    return newProfile;
   },
 
-  update(id: number, updates: Partial<ComplianceProfile>): ComplianceProfile | undefined {
-    const profiles = loadProfiles();
-    const idx = profiles.findIndex(p => p.id === id);
-    if (idx === -1) return undefined;
-    if (updates.isDefault) {
-      profiles.forEach(p => p.isDefault = false);
+  /** @backend GET /api/v1/settings/compliance-profiles/{id} — Loc: build this endpoint */
+  async getById(id: number): Promise<ComplianceProfile | undefined> {
+    try {
+      const { data } = await api.get<ComplianceProfile>(`/v1/settings/compliance-profiles/${id}`);
+      return data;
+    } catch (e) {
+      console.error(`complianceProfileService.getById(${id}) failed:`, e);
+      return undefined;
     }
-    profiles[idx] = { ...profiles[idx], ...updates, modifiedDate: new Date().toISOString() };
-    saveProfiles(profiles);
-    return profiles[idx];
   },
 
-  delete(id: number): boolean {
-    const profiles = loadProfiles();
-    const filtered = profiles.filter(p => p.id !== id);
-    if (filtered.length === profiles.length) return false;
-    saveProfiles(filtered);
-    return true;
+  /** @backend POST /api/v1/settings/compliance-profiles — Loc: build this endpoint */
+  async create(profile: Omit<ComplianceProfile, 'id' | 'createdDate'>): Promise<ComplianceProfile | undefined> {
+    try {
+      const { data } = await api.post<ComplianceProfile>('/v1/settings/compliance-profiles', profile);
+      return data;
+    } catch (e) {
+      console.error('complianceProfileService.create failed:', e);
+      return undefined;
+    }
   },
 
-  getDriverStatuses(): DriverComplianceStatus[] {
-    return loadDriverStatuses();
+  /** @backend PUT /api/v1/settings/compliance-profiles/{id} — Loc: build this endpoint */
+  async update(id: number, updates: Partial<ComplianceProfile>): Promise<ComplianceProfile | undefined> {
+    try {
+      const { data } = await api.put<ComplianceProfile>(`/v1/settings/compliance-profiles/${id}`, updates);
+      return data;
+    } catch (e) {
+      console.error(`complianceProfileService.update(${id}) failed:`, e);
+      return undefined;
+    }
   },
 
-  getDriverStatus(courierId: number): DriverComplianceStatus | undefined {
-    return loadDriverStatuses().find(d => d.courierId === courierId);
+  /** @backend DELETE /api/v1/settings/compliance-profiles/{id} — Loc: build this endpoint */
+  async delete(id: number): Promise<boolean> {
+    try {
+      await api.delete(`/v1/settings/compliance-profiles/${id}`);
+      return true;
+    } catch (e) {
+      console.error(`complianceProfileService.delete(${id}) failed:`, e);
+      return false;
+    }
   },
 
-  getEligibleDriverCount(profileId: number): number {
-    return loadDriverStatuses().filter(d =>
-      d.profiles.some(p => p.profileId === profileId && p.isEligible)
-    ).length;
+  /** @backend GET /api/v1/np/compliance/driver-statuses — Loc: build this endpoint */
+  async getDriverStatuses(): Promise<DriverComplianceStatus[]> {
+    try {
+      const { data } = await api.get<DriverComplianceStatus[]>('/v1/np/compliance/driver-statuses');
+      return data ?? [];
+    } catch (e) {
+      console.error('complianceProfileService.getDriverStatuses failed:', e);
+      return [];
+    }
+  },
+
+  /** @backend GET /api/v1/np/compliance/score/{courierId} */
+  async getDriverStatus(courierId: number): Promise<DriverComplianceStatus | undefined> {
+    try {
+      const { data } = await api.get<DriverComplianceStatus>(`/v1/np/compliance/driver-status/${courierId}`);
+      return data;
+    } catch (e) {
+      console.error(`complianceProfileService.getDriverStatus(${courierId}) failed:`, e);
+      return undefined;
+    }
+  },
+
+  /** @backend GET /api/v1/settings/compliance-profiles/{profileId}/eligible-count — Loc: build this endpoint */
+  async getEligibleDriverCount(profileId: number): Promise<number> {
+    try {
+      const { data } = await api.get<{ count: number }>(`/v1/settings/compliance-profiles/${profileId}/eligible-count`);
+      return data?.count ?? 0;
+    } catch (e) {
+      console.error('complianceProfileService.getEligibleDriverCount failed:', e);
+      return 0;
+    }
   },
 
   getRecruitmentConfig(): RecruitmentConfig {

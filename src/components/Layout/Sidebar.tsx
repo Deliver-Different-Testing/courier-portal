@@ -211,7 +211,7 @@ function buildTenantSections(cfg: ReturnType<typeof useTenantConfig>['config']):
 
   sections.push({
     id: 'compliance', label: 'Compliance', icon: icons.compliance,
-    badge: 3, // e.g. 2 expiring docs + 1 pending approval
+    badge: 3, // TODO: should come from API (expiring docs + pending approvals count)
     items: [
       { id: '/compliance', label: 'Compliance', implemented: true },
     ],
@@ -262,7 +262,7 @@ function buildNpSections(): NavSection[] {
     },
     {
       id: 'compliance', label: 'Compliance', icon: icons.compliance,
-      badge: 3,
+      badge: 3, // TODO: should come from API (expiring docs + pending approvals count)
       items: [
         { id: '/compliance', label: 'Compliance Hub', implemented: true },
         { id: '/compliance-profiles', label: 'Compliance Profiles', implemented: true },
@@ -677,7 +677,8 @@ export default function Sidebar({ collapsed, onUpgrade, selectedCourierId }: Pro
                   {isDfAdmin ? 'DF Admin' : role === 'tenant' ? 'Tenant User' : role === 'id' ? 'Midwest Medical Supplies' : 'NP Admin'}
                 </p>
                 <p className="text-xs text-white/50 truncate">
-                  {isDfAdmin ? 'steve@deliverdifferent.com' : role === 'tenant' ? 'admin@tenant.com' : role === 'id' ? 'admin@midwestmedical.com' : 'admin@partner.com'}
+                  {/* TODO: replace with user?.email from auth context when available */}
+                  {isDfAdmin ? 'admin' : role === 'tenant' ? 'admin' : role === 'id' ? 'admin' : 'admin'}
                 </p>
               </div>
             </div>

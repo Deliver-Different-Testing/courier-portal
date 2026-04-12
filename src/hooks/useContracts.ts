@@ -1,19 +1,23 @@
-// @ts-nocheck
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { contractService } from '@/services/np_contractService';
+import type { CourierContract } from '@/types';
 
 export function useContracts() {
+  const [contracts, setContracts] = useState<CourierContract[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
-  const contracts = useMemo(() => contractService.getContracts(), [refreshKey]);
   const refresh = useCallback(() => setRefreshKey(k => k + 1), []);
 
-  const activateContract = useCallback((id: number) => {
-    contractService.activateContract(id);
+  useEffect(() => {
+    contractService.getContracts().then(setContracts).catch(() => setContracts([]));
+  }, [refreshKey]);
+
+  const activateContract = useCallback(async (id: number) => {
+    await contractService.activateContract(id);
     refresh();
   }, [refresh]);
 
-  const deleteContract = useCallback((id: number) => {
-    contractService.deleteContract(id);
+  const deleteContract = useCallback(async (id: number) => {
+    await contractService.deleteContract(id);
     refresh();
   }, [refresh]);
 

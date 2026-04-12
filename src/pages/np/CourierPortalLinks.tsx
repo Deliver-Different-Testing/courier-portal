@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { courierService } from '@/services/np_courierService';
 
 export default function CourierPortalLinks() {
-  const [links, setLinks] = useState(courierService.getPortalLinks());
+  const [links, setLinks] = useState<{ courierId: number; code: string; name: string; url: string }[]>([]);
+  useEffect(() => { courierService.getPortalLinks().then(setLinks); }, []);
   const [copied, setCopied] = useState<number | null>(null);
 
   const copyLink = (id: number, url: string) => {

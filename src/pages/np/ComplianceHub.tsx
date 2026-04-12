@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ComplianceDashboard from './ComplianceDashboard';
 import ComplianceProfiles from './ComplianceProfiles';
 import DocumentTypeSettings from './DocumentTypeSettings';
@@ -17,7 +17,11 @@ interface TabDef {
 export default function ComplianceHub({ initialTab, standalone }: { initialTab?: Tab; standalone?: boolean }) {
   const [activeTab, setActiveTab] = useState<Tab>(initialTab || 'dashboard');
   const { role } = useRole();
-  const pendingCount = driverApprovalService.getPendingCount();
+  const [pendingCount, setPendingCount] = useState<number>(0);
+
+  useEffect(() => {
+    driverApprovalService.getPendingCount().then(setPendingCount).catch(() => setPendingCount(0));
+  }, []);
 
   const tabs: TabDef[] = [
     { id: 'dashboard', label: 'Dashboard' },

@@ -75,8 +75,7 @@ export default function DriverComplianceTab({ courierId }: { courierId: number }
   const [status, setStatus] = useState<DriverComplianceStatus | null>(null);
 
   useEffect(() => {
-    const s = complianceProfileService.getDriverStatus(courierId);
-    setStatus(s || null);
+    complianceProfileService.getDriverStatus(courierId).then(s => setStatus(s ?? null));
   }, [courierId]);
 
   if (!status) {

@@ -145,7 +145,7 @@ export function CourierMessenger({ open, onClose }: CourierMessengerProps) {
   const chatEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    setFleets(fleetService.getAll());
+    fleetService.getAll().then(setFleets);
   }, []);
 
   useEffect(() => {

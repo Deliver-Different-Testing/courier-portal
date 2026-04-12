@@ -1,11 +1,12 @@
 import { useNavigate } from 'react-router-dom';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useCouriers } from '@/hooks/useCouriers';
 import StatusBadge from '@/components/common/StatusBadge';
 import ComplianceBadge from '@/components/common/ComplianceBadge';
 import { complianceProfileService } from '@/services/np_complianceProfileService';
 import { driverApprovalService } from '@/services/np_driverApprovalService';
 import { fleetService } from '@/services/np_fleetService';
+import type { ComplianceProfile, DriverComplianceStatus, Courier } from '@/types';
 
 interface Props {
   onSelectCourier: (id: number) => void;
@@ -26,10 +27,24 @@ export default function FleetOverview({ onSelectCourier }: Props) {
   const [roleModal, setRoleModal] = useState<number | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<number | null>(null);
 
-  const allProfiles = complianceProfileService.getAll().filter(p => p.active);
-  const driverStatuses = complianceProfileService.getDriverStatuses();
-  const allWithApproval = driverApprovalService.getAllCouriersWithApproval();
-  const depots = fleetService.getDepots();
+  const [allProfiles, setAllProfiles] = useState<ComplianceProfile[]>([]);
+  const [driverStatuses, setDriverStatuses] = useState<DriverComplianceStatus[]>([]);
+  const [allWithApproval, setAllWithApproval] = useState<Courier[]>([]);
+  const [depots, setDepots] = useState<{ id: number; name: string }[]>([]);
+
+  useEffect(() => {
+    Promise.all([
+      complianceProfileService.getAll(),
+      complianceProfileService.getDriverStatuses(),
+      driverApprovalService.getAllCouriersWithApproval(),
+      fleetService.getDepots(),
+    ]).then(([profs, statuses, withApproval, deps]) => {
+      setAllProfiles(profs.filter(p => p.active));
+      setDriverStatuses(statuses);
+      setAllWithApproval(withApproval);
+      setDepots(deps);
+    });
+  }, []);
 
   const getApprovalStatus = (courierId: number) => {
     return allWithApproval.find(c => c.id === courierId)?.tenantApprovalStatus;
