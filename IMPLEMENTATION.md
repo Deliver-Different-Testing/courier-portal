@@ -371,19 +371,46 @@ Work through these in order. Each section has: **what page uses it**, **what API
 - `GET /api/portal/schedules` — get availability
 - `POST /api/portal/schedules` — mark availability
 - `GET /api/portal/invoices/recent` — courier's recent invoices
+- `GET /api/portal/invoices/past` — past invoices list
+- `GET /api/portal/invoices/{invoiceNo}` — view single invoice
 - `GET /api/portal/invoices/uninvoiced` — uninvoiced runs available for invoicing
 - `POST /api/portal/invoices` — courier creates/submits invoice from selected runs
 - `GET /api/portal/contracts` — get own contract file
 - `GET /api/portal/vehicles` — get vehicle types
+- `GET /api/portal/reports/settings` — get available reports (incl. buyer-created invoice periods)
 
 **Service to update:** Create `src/services/portal_courierService.ts` calls (file exists with placeholders).
+
+#### Invoicing Modes — Controlled by Fleet Setting
+
+Couriers see **different invoicing experiences** depending on their fleet's `UccrInternal` flag on `TucCourier`:
+
+| `UccrInternal` | Mode | What courier sees |
+|---|---|---|
+| `false` | **Courier-generated invoices** | Courier selects uninvoiced runs → creates/submits their own tax invoice. Uses `InvoiceService.Create()`. This is the standard contractor model. |
+| `true` | **Buyer-created tax invoices (BCTI)** | The company (via Accounts app) generates invoices on behalf of the courier. Courier can only **view** these invoices as read-only PDFs. `ReportService.GetSettings()` returns available BCTI periods from `tblBuyerTaxInvoiceControl`. Courier selects a period → downloads the PDF via `ReportService.GetReport()`. |
+
+**Backend code status:**
+- `InvoiceService` — filters with `!c.UccrInternal` (only non-internal couriers can create invoices). ✅ Already correct.
+- `ReportService.GetSettings()` — has commented-out code to return BCTI periods when `courier.UccrInternal == true` from `TblBuyerTaxInvoiceControls`. 🔧 **Loc needs to uncomment and wire this.**
+- `ReportService.GetReport()` — has commented-out `BuyerCreatedTaxInvoice2` report path. 🔧 **Loc needs to uncomment and wire to SSRS or replace with direct DB query.**
+
+**Frontend wiring needed:**
+- `CourierInvoicing.tsx` (mobile) and `Invoicing.tsx` (portal) — both already have a read-only "view buyer-created invoices" section. Wire the mode toggle based on courier profile (`UccrInternal` flag from `GET /api/portal/couriers/me`).
+- When `UccrInternal=true`: hide "Create Invoice" tab, show period picker → PDF download.
+- When `UccrInternal=false`: show "Create Invoice" tab (current behaviour).
+
+**Key tables:**
+- `tucCourier.uccrInternal` — the flag (boolean) 
+- `tucCourier.CourierFleetId` — FK to fleet. Fleet determines whether couriers are internal.
+- `tblBuyerTaxInvoiceControl` — has `Period` column (e.g. `"202603"`) — controls which periods have BCTI PDFs available.
 
 ---
 
 ### STEP 13: Courier Portal (Desktop self-service)
 
 **Pages:** `src/pages/portal/` (6 pages)  
-**Backend endpoints:** Same as Courier Mobile App (Step 12) — these are the desktop equivalents.
+**Backend endpoints:** Same as Courier Mobile App (Step 12) — these are the desktop equivalents. Same invoicing mode logic applies (BCTI vs courier-generated based on `UccrInternal`).
 
 ---
 
