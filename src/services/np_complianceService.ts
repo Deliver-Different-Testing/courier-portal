@@ -1,19 +1,34 @@
-// TODO: Implement compliance service — stubs for build
+import api from './np_api';
+import type {
+  ComplianceDashboard,
+  ComplianceAlert,
+  CourierComplianceScore,
+  ComplianceAlertFilter,
+} from '@/types';
 
 export const complianceService = {
-  async getOverview() {
-    return [];
+  async getDashboard(): Promise<ComplianceDashboard> {
+    const { data } = await api.get('/v1/np/compliance/dashboard');
+    return data;
   },
-  async getDetail(_courierId: number) {
-    return { documents: [], issues: [] };
+
+  async getAlerts(filters?: ComplianceAlertFilter): Promise<ComplianceAlert[]> {
+    const params: Record<string, string | number> = {};
+    if (filters?.docType) params.docType = filters.docType;
+    if (filters?.status) params.status = filters.status;
+    if (filters?.courierName) params.courierName = filters.courierName;
+    if (filters?.daysAhead) params.daysAhead = filters.daysAhead;
+    const { data } = await api.get('/v1/np/compliance/alerts', { params });
+    return data;
   },
-  async getProfiles() {
-    return [];
+
+  async getCourierScore(courierId: number): Promise<CourierComplianceScore> {
+    const { data } = await api.get(`/v1/np/compliance/score/${courierId}`);
+    return data;
   },
-  async getDocumentTypes() {
-    return [];
-  },
-  async getCourierCompliance(_courierId: number) {
-    return { compliant: false, documents: [], expiringDocuments: 0, missingDocuments: 0 };
+
+  async bulkNotify(courierIds: number[]): Promise<{ notified: number }> {
+    const { data } = await api.post('/v1/np/compliance/bulk-notify', { courierIds });
+    return data;
   },
 };

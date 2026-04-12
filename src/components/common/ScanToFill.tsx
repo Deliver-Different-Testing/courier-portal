@@ -4,10 +4,10 @@ import { useState, useRef, useCallback } from 'react';
 
 export function AiConfidenceBadge({ confidence }: { confidence: number }) {
   if (confidence >= 95)
-    return <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded border font-medium text-green-600 bg-green-50 border-green-200">AI ✓</span>;
+    return <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-green-50 text-green-700 border border-green-200 font-medium">AI ✓</span>;
   if (confidence >= 70)
-    return <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded border font-medium text-amber-600 bg-amber-50 border-amber-200">AI ~</span>;
-  return <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded border font-medium text-red-600 bg-red-50 border-red-200">Review</span>;
+    return <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium">AI ~</span>;
+  return <span className="inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">Review</span>;
 }
 
 // ── Mock Extraction Data ────────────────────────────────
@@ -32,27 +32,14 @@ const MOCK_EXTRACTIONS: Record<string, Record<string, { value: string; confidenc
     regoExpiry:   { value: '2026-11-30',      confidence: 91 },
     vehicleType:  { value: 'Van',             confidence: 80 },
   },
-  "Insurance Certificate": {
-    policyNumber:    { value: 'INS-482917',    confidence: 92 },
-    insuranceCompany:{ value: 'State Farm',    confidence: 88 },
-    coverageAmount:  { value: '$1,000,000',    confidence: 75 },
-    expiryDate:      { value: '2027-01-15',    confidence: 90 },
-  },
-  "WOF Certificate": {
-    wofExpiry:  { value: '2026-09-01', confidence: 96 },
-    vehicleId:  { value: 'KXR-902',   confidence: 88 },
-  },
 };
 
 function getMockExtraction(docTypeName: string): Record<string, { value: string; confidence: number }> {
-  // Match by key substring
   for (const [key, fields] of Object.entries(MOCK_EXTRACTIONS)) {
-    if (docTypeName.toLowerCase().includes(key.toLowerCase().split(' ')[0].toLowerCase())
-        || key.toLowerCase().includes(docTypeName.toLowerCase().split(' ')[0].toLowerCase())) {
+    if (docTypeName.toLowerCase().includes(key.toLowerCase().split(' ')[0].toLowerCase())) {
       return fields;
     }
   }
-  // Exact match
   return MOCK_EXTRACTIONS[docTypeName] || { documentType: { value: docTypeName, confidence: 72 } };
 }
 
@@ -77,7 +64,6 @@ export default function ScanToFill({ label, docTypeName, onExtracted, accent = '
     setFileName(file.name);
     setState('processing');
 
-    // Simulate AI processing delay
     setTimeout(() => {
       const fields = getMockExtraction(docTypeName);
       setExtractedFields(fields);
@@ -93,15 +79,16 @@ export default function ScanToFill({ label, docTypeName, onExtracted, accent = '
   };
 
   return (
-    <div className="mb-4">
+    <div className="mb-5">
       <input
         ref={fileRef}
         type="file"
         accept="image/*,.pdf"
+        multiple
         className="hidden"
         onChange={e => {
-          const f = e.target.files?.[0];
-          if (f) handleFile(f);
+          const files = e.target.files;
+          if (files && files.length > 0) handleFile(files[0]);
           e.target.value = '';
         }}
       />
@@ -111,15 +98,15 @@ export default function ScanToFill({ label, docTypeName, onExtracted, accent = '
           onClick={() => fileRef.current?.click()}
           onDragOver={e => { e.preventDefault(); e.stopPropagation(); }}
           onDrop={e => { e.preventDefault(); const f = e.dataTransfer.files[0]; if (f) handleFile(f); }}
-          className="border-2 border-dashed rounded-lg p-4 text-center cursor-pointer hover:border-brand-cyan transition-colors"
+          className="border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer hover:border-opacity-100 transition-colors"
           style={{ borderColor: accent + '66' }}
         >
-          <div className="text-2xl mb-1">📸</div>
+          <div className="text-3xl mb-2">📸</div>
           <div className="text-sm font-semibold" style={{ color: accent }}>
             {label}
           </div>
-          <div className="text-xs text-text-secondary mt-0.5">
-            {docTypeName.toLowerCase().includes('licen')
+          <div className="text-xs text-gray-400 mt-1">
+            {docTypeName.toLowerCase().includes('license') || docTypeName.toLowerCase().includes('licence')
               ? 'Upload or take photos of both front and back'
               : 'Upload photo or PDF to auto-fill fields below'
             }
@@ -128,17 +115,17 @@ export default function ScanToFill({ label, docTypeName, onExtracted, accent = '
       )}
 
       {state === 'processing' && (
-        <div className="border border-brand-cyan/30 bg-brand-cyan/5 rounded-lg p-4 text-center">
+        <div className="border rounded-2xl p-5 text-center" style={{ borderColor: accent + '44', backgroundColor: accent + '08' }}>
           <div className="flex items-center justify-center gap-2">
-            <span className="inline-block w-4 h-4 border-2 border-brand-cyan border-t-transparent rounded-full animate-spin" />
-            <span className="text-sm font-medium text-brand-cyan">Analysing with AI…</span>
+            <span className="inline-block w-4 h-4 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: accent, borderTopColor: 'transparent' }} />
+            <span className="text-sm font-medium" style={{ color: accent }}>Analysing with AI…</span>
           </div>
-          <div className="text-xs text-text-secondary mt-1">{fileName}</div>
+          <div className="text-xs text-gray-400 mt-1">{fileName}</div>
         </div>
       )}
 
       {state === 'done' && extractedFields && (
-        <div className="border border-green-300 bg-green-50/50 rounded-lg p-3">
+        <div className="border border-green-300 bg-green-50/50 rounded-2xl p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-sm">✅</span>
@@ -146,7 +133,7 @@ export default function ScanToFill({ label, docTypeName, onExtracted, accent = '
                 {Object.keys(extractedFields).length} fields extracted from {fileName}
               </span>
             </div>
-            <button onClick={reset} className="text-xs text-brand-cyan hover:underline">
+            <button onClick={reset} className="text-xs font-medium hover:underline" style={{ color: accent }}>
               Re-scan
             </button>
           </div>
@@ -154,8 +141,8 @@ export default function ScanToFill({ label, docTypeName, onExtracted, accent = '
             {Object.entries(extractedFields).map(([key, { value, confidence }]) => (
               <div key={key} className="flex items-center gap-1.5 text-xs py-0.5">
                 <AiConfidenceBadge confidence={confidence} />
-                <span className="text-text-secondary truncate">{key}:</span>
-                <span className="font-medium text-brand-dark truncate">{value}</span>
+                <span className="text-gray-500 truncate">{key}:</span>
+                <span className="font-medium text-gray-900 truncate">{value}</span>
               </div>
             ))}
           </div>

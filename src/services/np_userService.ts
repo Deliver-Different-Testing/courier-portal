@@ -1,19 +1,7 @@
-// TODO: Implement user service — stubs for build
+import { users } from './np_mockData';
+import type { User } from '@/types';
 
 export const userService = {
-  getAll() {
-    return [];
-  },
-  async create(_data: Record<string, unknown>) {
-    return { success: true };
-  },
-  async invite(_email: string, _role?: string) {
-    return { success: true };
-  },
-  async update(_id: number, _data: Record<string, unknown>) {
-    return { success: true };
-  },
-  async delete(_id: number) {
-    return { success: true };
-  },
+  getAll: (): User[] => users,
+  getById: (id: string): User | undefined => users.find(u => u.id === id),
 };

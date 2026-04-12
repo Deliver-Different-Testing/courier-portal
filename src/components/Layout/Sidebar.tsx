@@ -245,7 +245,9 @@ function buildNpSections(): NavSection[] {
       items: [
         { id: '/fleet', label: 'Driver List', implemented: true },
         { id: '/fleet/add', label: 'Add Driver', implemented: true },
+        { id: '/fleet/import', label: 'Import Drivers', implemented: true },
         { id: '/fleet-management', label: 'Vehicle Fleet', implemented: true },
+        { id: '/fleet/links', label: 'Portal Links', implemented: true },
       ],
     },
     {
@@ -254,21 +256,45 @@ function buildNpSections(): NavSection[] {
         { id: '/recruitment', label: 'Pipeline', implemented: true },
         { id: '/recruitment/portal-url', label: 'Applicant Portal', implemented: true },
         { id: '/settings/recruitment-ads', label: 'Advertising', implemented: true },
+        { id: '/settings/recruitment-stages', label: 'Stage Settings', implemented: true },
+        { id: '/settings/registration', label: 'Registration Fields', implemented: true },
       ],
     },
     {
       id: 'compliance', label: 'Compliance', icon: icons.compliance,
+      badge: 3,
       items: [
-        { id: '/compliance', label: 'Compliance', implemented: true },
+        { id: '/compliance', label: 'Compliance Hub', implemented: true },
+        { id: '/compliance-profiles', label: 'Compliance Profiles', implemented: true },
+        { id: '/driver-approval', label: 'Driver Approval', implemented: true },
+        { id: '/settings/document-types', label: 'Document Types', implemented: true },
       ],
-    },
-    {
-      id: 'users-section', label: 'My Team', icon: icons.users,
-      items: [{ id: '/users', label: 'My Team', implemented: true }],
     },
     {
       id: 'scheduling', label: 'Scheduling', icon: icons.scheduling,
       items: [{ id: '/scheduling', label: 'Scheduling', implemented: true }],
+    },
+    {
+      id: 'training', label: 'Training', icon: icons.compliance,
+      items: [
+        { id: '/quiz-builder', label: 'Quiz Builder', implemented: true },
+        { id: '/flow-builder', label: 'Flow Builder', implemented: true },
+        { id: '/documents', label: 'Document Management', implemented: true },
+      ],
+    },
+    {
+      id: 'operations', label: 'Operations', icon: icons.deliveries,
+      items: [
+        { id: '/operations', label: 'Operations', implemented: true },
+        { id: '/settings/openforce-activity', label: 'Openforce Activity', implemented: true },
+      ],
+    },
+    {
+      id: 'users-section', label: 'My Team', icon: icons.users,
+      items: [
+        { id: '/users', label: 'My Team', implemented: true },
+        { id: '/users/import', label: 'Import Users', implemented: true },
+      ],
     },
     {
       id: 'reports-section', label: 'Reports', icon: icons.reports,
