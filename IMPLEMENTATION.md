@@ -15,9 +15,10 @@ The `courier-portal` repo has been set up as the **authoritative app** for couri
 - All controllers are correct and in their final locations.
 - See `AUDIT.md` for full controller/service inventory and architecture decisions.
 - **Known TODOs in AUDIT.md you must complete:**
-  - `Portal/InvoiceService` → needs refactoring to call Accounts API via HttpClient
-  - `Portal/RunService` → needs `InvoiceUtility.IsCompleted` / `CanInvoice` extracted or replaced with Accounts API calls
+  - `Portal/InvoiceService` → **KEEP as-is.** Couriers generate invoices through the portal by selecting uninvoiced runs. This reads from DespatchContext (CourierInvoice, CourierInvoiceLine tables) and must stay in courier-portal. The Accounts app handles invoice *processing/settlement* after creation — but invoice *generation* by the courier happens here.
+  - `Portal/RunService` → Keep. Uses `InvoiceUtility.IsCompleted` / `CanInvoice` to determine which runs are invoiceable. These helpers should stay in courier-portal (they're needed for the Create Invoice flow).
   - `Program.cs` → NP Redesign service interface registrations are `TODO` placeholders — register concrete implementations
+  - **Accounts boundary clarification:** Courier-portal owns invoice *creation* (courier selects runs → generates invoice). Accounts owns invoice *processing* (batching, settlements, payments, deductions, statements). The `Portal/InvoicesController` endpoints (Recent, Past, Uninvoiced, Create) all stay in courier-portal.
 
 ### Frontend (`src/`)
 All frontend pages have been copied in and are TypeScript-clean (0 errors, verified with `tsc --noEmit`).
@@ -143,7 +144,7 @@ From `AUDIT.md` and the backend codebase:
 | User | `Users` | CourierPortalContext | courier-portal |
 | NpCourier | `NpCouriers` | CourierPortalContext | courier-portal |
 
-**Accounts app owns** (do not duplicate): CourierInvoice, CourierDeduction, CourierInvoiceBatch, Fleet (read-only from courier-portal), Location, Payment, DirectDebit, Statement.
+**Accounts app owns** (do not duplicate): CourierInvoiceBatch (batch processing/settlements), CourierDeduction, Fleet listing (GetAll only — courier-portal has full Fleet CRUD), Location, Payment, DirectDebit, Statement. **Note:** CourierInvoice entity is shared — courier-portal creates invoices, Accounts processes/settles them.
 
 ---
 
@@ -369,7 +370,9 @@ Work through these in order. Each section has: **what page uses it**, **what API
 - `GET /api/portal/runs` — get own runs
 - `GET /api/portal/schedules` — get availability
 - `POST /api/portal/schedules` — mark availability
-- `GET /api/portal/invoices` — get own invoices (proxies to Accounts API)
+- `GET /api/portal/invoices/recent` — courier's recent invoices
+- `GET /api/portal/invoices/uninvoiced` — uninvoiced runs available for invoicing
+- `POST /api/portal/invoices` — courier creates/submits invoice from selected runs
 - `GET /api/portal/contracts` — get own contract file
 - `GET /api/portal/vehicles` — get vehicle types
 
@@ -499,7 +502,7 @@ server: {
 
 - 🔧 Replace mock services with real API calls (Steps 1–16 above)
 - 🔧 Register NP Redesign service implementations in `Program.cs` (see AUDIT.md TODOs)
-- 🔧 Fix `Portal/InvoiceService` to call Accounts API
+- ✅ `Portal/InvoiceService` — stays as-is (courier creates invoices from uninvoiced runs via DespatchContext)
 - 🔧 Fix `Portal/RunService` to extract InvoiceUtility helpers
 - 🔧 Auth flow end-to-end (JWT storage + interceptors)
 - 🔧 One-time data migration from dfrnt-recruitment PostgreSQL to SQL Server (when ready to retire it)
