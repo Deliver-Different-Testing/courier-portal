@@ -55,7 +55,7 @@ All frontend pages have been copied in and are TypeScript-clean (0 errors, verif
 - Messenger (NP ↔ courier messaging)
 - Courier self-service portal (runs, schedule, invoices, contractors, training)
 - Registration settings, contract settings, advertising
-- Openforce activity
+- Openforce — **recruitment/onboarding status only** (not payments/settlements/1099 — those are in Accounts)
 - NP user management
 
 ### dfrnt-agents-partners (Garry's repo) — NOT your scope
@@ -310,7 +310,12 @@ Work through these in order. Each section has: **what page uses it**, **what API
 
 **Service to update:** `src/services/np_documentService.ts`
 
-The `ScanToFill.tsx` component calls `POST /api/documentscan` — wire this up for the applicant portal AI scan feature.
+**Document Scanning Architecture:**
+- `ScanToFill.tsx` (in `src/components/common/`) — mobile camera/upload UI with confidence badges. Currently uses **mock extraction data**. Wire to real `POST /api/documentscan/scan` endpoint.
+- `AiScanResult.tsx` (in `src/components/steps/`) — displays extracted fields with confidence indicators (high/medium/low).
+- Backend `DocumentScanController.cs` — already in the courier-portal backend. Sends document images to Anthropic Claude Vision API, extracts structured fields (driver license, vehicle rego, insurance, WOF, TSL). Requires `ANTHROPIC_API_KEY` environment variable.
+- The `dfrnt-recruitment` Railway app has an identical `DocumentScanController` — that's the working reference. Same code, same prompts.
+- **Key wiring task:** Replace the `MOCK_EXTRACTIONS` object in `ScanToFill.tsx` with a real `fetch('/api/documentscan/scan', { method: 'POST', body: formData })` call. The response shape is `{ success: bool, fields: { [key]: { value, confidence } }, fileName, fileSize }`.
 
 ---
 
@@ -396,15 +401,24 @@ The `ScanToFill.tsx` component calls `POST /api/documentscan` — wire this up f
 
 ---
 
-### STEP 15: Openforce Activity
+### STEP 15: Openforce Activity (Recruitment Only)
 
 **Page:** `OpenforceActivity.tsx`  
-**Backend endpoints:**
-- `GET /api/admin/openforce/settings` — get settings
-- `GET /api/admin/openforce/contractors` — list contractors
-- `GET /api/admin/openforce/1099` — 1099 data
+**Scope:** This page shows **courier onboarding/recruitment status** within Openforce — i.e., is this courier registered as a 1099 contractor? What's their onboarding status?
 
-**Note:** Openforce financial data ultimately comes from the Accounts app. The courier-portal's OpenforceController may proxy these calls. Check AUDIT.md for the recommendation.
+**Courier-portal owns:**
+- Contractor recruitment/onboarding status (is this courier set up in Openforce?)
+- Recruitment activity view (who's been onboarded, who's pending)
+
+**Accounts app owns (NOT your scope):**
+- Openforce payment processing, settlements, 1099 tax documents
+- All financial Openforce API calls (payments, earnings, tax filing)
+
+**Backend endpoints (courier-portal scope only):**
+- `GET /api/openforce/recruitment-status` — contractor onboarding status
+- `GET /api/openforce/contractors` — list of contractors with recruitment status
+
+**Note:** If the existing `OpenforceController` in the backend has financial endpoints (settings, 1099 data), those should be removed or marked as proxy-to-Accounts. Only the recruitment/onboarding status endpoints belong in courier-portal. See AUDIT.md Section 1 for the full Openforce ownership split.
 
 ---
 
