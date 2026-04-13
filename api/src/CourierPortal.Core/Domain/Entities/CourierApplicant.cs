@@ -1,62 +1,67 @@
+#nullable disable
+using System;
+using System.Collections.Generic;
+
 namespace CourierPortal.Core.Domain.Entities;
 
-/// <summary>
-/// Full applicant record for the courier recruitment pipeline.
-/// Tracks profile, vehicle, banking, next of kin, and declaration status.
-/// </summary>
-public class CourierApplicant
+public partial class CourierApplicant
 {
     public int Id { get; set; }
-    public int TenantId { get; set; }
+    public DateTime Created { get; set; }
+    public int? CourierId { get; set; }
+    public string FirstName { get; set; }
+    public string Surname { get; set; }
+    public DateTime? DateOfBirth { get; set; }
+    public string Phone { get; set; }
+    public string Mobile { get; set; }
+    public string Email { get; set; }
+    public bool EmailVerified { get; set; }
+    public string EmailVerificationCode { get; set; }
+    public int EmailVerificationAttempts { get; set; }
+    public string Password { get; set; }
+    public string Address { get; set; }
+    public int? SiteId { get; set; }
+    public string DriversLicenceNo { get; set; }
+    public string VehicleType { get; set; }
+    public string VehicleRegistrationNo { get; set; }
+    public bool GstRegistered { get; set; }
+    public string TaxNo { get; set; }
+    public string BankAccountNo { get; set; }
+    public string NextOfKin { get; set; }
+    public string NextOfKinRelationship { get; set; }
+    public string NextOfKinPhone { get; set; }
+    public string NextOfKinAddress { get; set; }
+    public bool TrainingCompleted { get; set; }
+    public DateTime? RejectDate { get; set; }
+    public string RejectReason { get; set; }
+    public int? ContractId { get; set; }
+    public string DeclarationText { get; set; }
+    public DateTime? DeclarationDate { get; set; }
+    public bool DeclarationAgree { get; set; }
+    public string DeclarationName { get; set; }
+    public string DeclarationSignatureFileName { get; set; }
+    public string DeclarationSignatureType { get; set; }
+    public long? DeclarationSignatureLength { get; set; }
+    public byte[] DeclarationSignature { get; set; }
     public int? RegionId { get; set; }
-
-    // --- Identity ---
-    public string Email { get; set; } = string.Empty;
-    public string FirstName { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string? Phone { get; set; }
-
-    // --- Address ---
-    public string? Address { get; set; }
-    public string? City { get; set; }
-    public string? State { get; set; }
-    public string? Postcode { get; set; }
-
-    // --- Vehicle ---
-    public string? VehicleType { get; set; }
-    public string? VehicleMake { get; set; }
-    public string? VehicleModel { get; set; }
-    public int? VehicleYear { get; set; }
-    public string? VehiclePlate { get; set; }
-
-    // --- Banking ---
-    public string? BankAccountName { get; set; }
-    public string? BankAccountNumber { get; set; }
-    public string? BankBSB { get; set; }
-
-    // --- Next of Kin ---
-    public string? NextOfKinName { get; set; }
-    public string? NextOfKinPhone { get; set; }
-    public string? NextOfKinRelationship { get; set; }
-
-    // --- Pipeline ---
-    public string PipelineStage { get; set; } = "Registration";
-
-    // --- Declaration ---
-    public bool DeclarationSigned { get; set; }
-    public DateTime? DeclarationSignedDate { get; set; }
-    public string? DeclarationSignatureS3Key { get; set; }
-
-    // --- Outcome ---
-    public DateTime? RejectedDate { get; set; }
-    public string? RejectedReason { get; set; }
-    public int? ApprovedAsCourierId { get; set; }
-
-    // --- Meta ---
-    public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
-    public DateTime? ModifiedDate { get; set; }
-    public string? Notes { get; set; }
-
-    // Navigation
-    // NpCourier ref — in Steve-v2.0
+    public string CourierCode { get; set; }
+    public int? CourierFleetId { get; set; }
+    public string AddressLine1 { get; set; }
+    public string AddressLine2 { get; set; }
+    public string AddressLine3 { get; set; }
+    public string AddressLine4 { get; set; }
+    public string AddressLine5 { get; set; }
+    public string AddressLine6 { get; set; }
+    public string AddressLine7 { get; set; }
+    public string AddressLine8 { get; set; }
+    public string BankRoutingNumber { get; set; }
+    public int? CourierTypeId { get; set; }
+    public int? MasterCourierId { get; set; }
+    public virtual CourierContract Contract { get; set; }
+    public virtual TucCourier Courier { get; set; }
+    public virtual TucCourierFleet CourierFleet { get; set; }
+    public virtual CourierType CourierType { get; set; }
+    public virtual ICollection<CourierApplicantUpload> CourierApplicantUploads { get; set; } = new List<CourierApplicantUpload>();
+    public virtual TucCourier MasterCourier { get; set; }
+    public virtual TblBulkRegion Region { get; set; }
 }

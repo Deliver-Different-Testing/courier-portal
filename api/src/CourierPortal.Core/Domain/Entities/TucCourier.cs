@@ -275,14 +275,13 @@ public partial class TucCourier
 
     public virtual ICollection<CourierAvailability> CourierAvailabilities { get; set; } = new List<CourierAvailability>();
 
-// REMOVED: handled by Accounts
-//     public virtual ICollection<CourierDeductionRecurring> CourierDeductionRecurrings { get; set; } = new List<CourierDeductionRecurring>();
+    public virtual ICollection<CourierDeductionRecurring> CourierDeductionRecurrings { get; set; } = new List<CourierDeductionRecurring>();
 
-//     public virtual ICollection<CourierDeduction> CourierDeductions { get; set; } = new List<CourierDeduction>();
+    public virtual ICollection<CourierDeduction> CourierDeductions { get; set; } = new List<CourierDeduction>();
 
     public virtual TucCourierFleet CourierFleet { get; set; }
 
-//     public virtual ICollection<CourierInvoice> CourierInvoices { get; set; } = new List<CourierInvoice>();
+    public virtual ICollection<CourierInvoice> CourierInvoices { get; set; } = new List<CourierInvoice>();
 
     public virtual TblCourierLogInOut CourierLogInOut { get; set; }
 
@@ -290,7 +289,7 @@ public partial class TucCourier
 
     public virtual CourierType CourierType { get; set; }
 
-    // Infringement collection — in Steve-v2.0
+    public virtual ICollection<Infringement> Infringements { get; set; } = new List<Infringement>();
 
     public virtual TblBulkRegion Region { get; set; }
 

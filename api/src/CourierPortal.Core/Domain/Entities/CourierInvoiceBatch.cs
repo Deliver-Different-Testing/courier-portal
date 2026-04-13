@@ -1,0 +1,14 @@
+#nullable disable
+namespace CourierPortal.Core.Domain.Entities;
+
+public partial class CourierInvoiceBatch
+{
+    public long Id { get; set; }
+    public DateTime Created { get; set; }
+    public DateTime PayPeriodStartDate { get; set; }
+    public DateTime PayPeriodEndDate { get; set; }
+    public int StatusId { get; set; }
+    public string ExternalId { get; set; }
+    public virtual ICollection<CourierInvoiceBatchItem> CourierInvoiceBatchItems { get; set; } = new List<CourierInvoiceBatchItem>();
+    public virtual CourierInvoiceBatchStatus Status { get; set; }
+}

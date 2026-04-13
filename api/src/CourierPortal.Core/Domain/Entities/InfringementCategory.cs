@@ -1,0 +1,14 @@
+#nullable disable
+namespace CourierPortal.Core.Domain.Entities;
+
+public partial class InfringementCategory
+{
+    public int Id { get; set; }
+    public DateTime Created { get; set; }
+    public string Name { get; set; }
+    public int Severity { get; set; }
+    public bool DetailsRequired { get; set; }
+    public bool Active { get; set; }
+    public virtual ICollection<InfringementCategoryLink> InfringementCategoryLinks { get; set; } = new List<InfringementCategoryLink>();
+    public virtual ICollection<Infringement> Infringements { get; set; } = new List<Infringement>();
+}
