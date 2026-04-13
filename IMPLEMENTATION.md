@@ -1,8 +1,14 @@
 # Courier Portal — Implementation Guide
 
 **For:** Loc (Developer)  
-**Date:** 2026-04-12  
+**Date:** 2026-04-12 (updated 2026-04-13)  
 **Status:** Frontend complete, backend wiring required
+
+> **🆕 Apr 13 Updates:**  
+> - 15 missing entity classes added, `CourierApplicant` fixed to match production schema  
+> - See **BACKEND-PRIORITY-CHECKLIST.md** for the prioritised build/wiring order  
+> - See **PROPERTY-MAPPING.md** for NP service property name → production schema mappings  
+> - Expected build errors reduced from ~241 to <20 after pulling latest
 
 ---
 
