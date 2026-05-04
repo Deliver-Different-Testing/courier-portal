@@ -15,9 +15,20 @@ It is intentionally a **discussion document**, not a final implementation spec. 
 
 ## Current State
 
+### Business / platform context
+
+Courier Portal **does exist as a tile on Hub** and applicants have historically been stored in Courier Portal data.
+
+That means two things are true at once:
+
+1. Courier Portal is part of the wider Hub ecosystem.
+2. Applicant records themselves are still Courier Portal / tenant data, not just generic Hub users.
+
+So this document is **not** proposing that applicants become standalone global users with no tenant association. The opposite is true: applicants must belong to a tenant.
+
 ### Frontend
 
-The current applicant portal (`/apply` and `/apply/:tenantSlug`) is effectively **public and anonymous**.
+The current applicant portal (`/apply` and `/apply/:tenantSlug`) is effectively **public and anonymous** at entry.
 
 Current behaviour:
 - applicant starts without login
@@ -25,6 +36,7 @@ Current behaviour:
 - resume works only on the same browser/device
 - document uploads and form state in the current React build are mostly UX-driven
 - there is no real applicant session in the frontend flow yet
+- the route structure already suggests tenant-aware entry via `/apply/:tenantSlug`
 
 ### Backend
 
@@ -43,7 +55,19 @@ Important existing backend rules:
 - applicant cannot log in until email is verified
 - once logged in, applicant can access protected endpoints using JWT bearer token
 
-So the backend already supports a more real flow than the frontend is currently using.
+### Current architectural mismatch
+
+The frontend already points toward **tenant-from-URL** onboarding, but parts of the backend still appear to expect **Hub-style tenant context** from claims/runtime wiring.
+
+So the real issue is not:
+
+> "Applicants must be Hub users first."
+
+The real issue is closer to:
+
+> "Applicants belong to a tenant, but the public applicant flow should resolve that tenant from the application URL rather than depending on Hub tile context at runtime."
+
+So the backend already supports a more real applicant auth flow than the frontend is using, but the tenant-resolution model still needs to be aligned with the public application journey.
 
 ---
 
@@ -72,20 +96,23 @@ We need a flow that is:
 
 ## Recommended Direction
 
-Use a **progressive auth flow**:
+Use a **tenant-from-URL + progressive auth flow**:
 
 1. applicant lands on the public `/apply/:tenantSlug` page
-2. first screen collects **email + basic details + password**
-3. backend creates applicant record and sends **6-digit verification code**
-4. applicant enters verification code inline
-5. once verified, frontend immediately logs them in and stores JWT
-6. remaining application steps become an authenticated applicant session
-7. progress is saved server-side, not just localStorage
+2. that URL identifies which tenant the applicant belongs to
+3. first screen collects **email + basic details + password**
+4. backend creates applicant record in that tenant and sends **6-digit verification code**
+5. applicant enters verification code inline
+6. once verified, frontend immediately logs them in and stores JWT
+7. JWT should carry tenant context for future requests
+8. remaining application steps become an authenticated applicant session in that tenant
+9. progress is saved server-side, not just localStorage
 
 This keeps the experience lightweight because:
 - there is still **no separate login page at the start**
 - verification happens inside the flow
 - auth is introduced only once, early, in a simple way
+- tenant association comes naturally from the application URL instead of requiring prior Hub user setup
 
 ---
 
@@ -95,7 +122,7 @@ This keeps the experience lightweight because:
 
 Applicant opens:
 - `/apply`
-- or `/apply/:tenantSlug`
+- or preferably `/apply/:tenantSlug`
 
 They see:
 - tenant branding
@@ -104,6 +131,23 @@ They see:
 - “Start application”
 
 No login required at this point.
+
+### Tenant association
+
+This is the key architectural point:
+
+- the applicant must still belong to a tenant
+- that tenant should be identified from the **application page URL**
+- the public applicant flow should not require the applicant to already exist as a Hub identity just to determine tenant
+
+So for applicant onboarding, the desired sequence is:
+
+1. URL slug identifies tenant
+2. backend resolves slug to tenant
+3. applicant record is created in that tenant's Courier Portal data
+4. applicant auth/session continues inside that tenant context
+
+This is different from internal staff launching a Hub tile, and that is OK.
 
 ---
 
@@ -126,7 +170,8 @@ Why password this early?
 `POST /api/portal/applicants/register`
 
 Expected effect:
-- create `CourierApplicants` row
+- resolve tenant from the application URL slug or equivalent request context
+- create `CourierApplicants` row in that tenant
 - save password
 - generate `EmailVerificationCode`
 - queue/send verification email
@@ -174,6 +219,8 @@ Result:
 
 From here onward, the applicant has a proper authenticated session.
 
+That session should also carry tenant context so future applicant requests do not need to keep re-inferring tenant from the public URL alone.
+
 ---
 
 ## 4. Authenticated Application Flow
@@ -219,6 +266,43 @@ Add passwordless resume:
 - or “Send me a one-time code”
 
 This would be better UX long term, but not required for phase 1 because the current backend already supports password auth cleanly.
+
+---
+
+## Tenant Resolution Model
+
+The clean model is:
+
+### Before verification / login
+Tenant comes from:
+- application URL slug
+- or equivalent public route context
+
+### After verification / login
+Tenant comes from:
+- applicant JWT claim(s)
+- with the applicant record already tied to the correct tenant DB/data set
+
+This gives the right split:
+- **public discovery and registration** use URL-based tenant resolution
+- **authenticated applicant actions** use token-based tenant resolution
+
+### Why this matters
+
+Applicants are usually arriving from:
+- recruitment ads
+- QR codes
+- careers pages
+- direct onboarding links
+
+They are **not** typically internal staff navigating from Hub first.
+
+So Hub can still remain relevant for:
+- internal staff access
+- tile navigation
+- courier/staff SSO where useful
+
+But public applicant onboarding should be able to identify the tenant directly from the recruitment/application link.
 
 ---
 
@@ -336,9 +420,15 @@ That said, those are **hardening tasks**, not blockers to agreeing the flow itse
 Not a final contract, but this is the clean mental model.
 
 ### Start application
+Preferred mental model:
+`POST /api/public/applicants/{tenantSlug}/register`
+
+Or, if the existing controller shape is retained:
 `POST /api/portal/applicants/register`
+with tenant slug supplied explicitly in route/body/header and resolved before the applicant write.
 
 Request:
+- tenantSlug
 - firstName
 - surname
 - email
@@ -351,6 +441,7 @@ Response:
 - success
 - emailSent = true
 - maybe `applicantCreated = true`
+- maybe resolved tenant metadata if helpful
 
 ### Verify email
 `POST /api/portal/applicants/emailverification`
@@ -373,6 +464,7 @@ Response:
 - token
 - refreshToken
 - accountType = Applicant
+- tenant context in token claims (recommended)
 
 ### Continue application
 Authenticated bearer session calls:
@@ -388,29 +480,34 @@ Authenticated bearer session calls:
 
 For applicants, the best lightweight auth flow is:
 
-- **public entry**
+- **public entry from a tenant-specific application URL**
+- **tenant resolved from URL at the start of the flow**
 - **early email + password capture**
 - **inline code verification**
 - **immediate JWT login after verification**
+- **tenant carried forward in the authenticated session**
 - **authenticated progress for the rest of the application**
 
 In plain English:
 
-> Let them start easily, verify identity once, then quietly turn the rest of the application into a normal signed-in session.
+> Let them arrive on the right tenant's application page, identify that tenant from the URL, verify identity once, then quietly turn the rest of the application into a normal signed-in session.
 
-That gives us the lowest friction path without ending up with a fragile anonymous draft system.
+That gives us the lowest friction path without ending up with a fragile anonymous draft system or forcing applicants to be pre-created as Hub users.
 
 ---
 
 ## Open Questions
 
-These need product decisions before implementation:
+These need product/implementation decisions before implementation:
 
 1. Do we want password at step 1, or do we want OTP-only to start?
 2. Should existing applicants be prompted to log in, or should we support “resend verification / resume by code” immediately?
 3. Do we want admin visibility of partial applicants from the moment registration starts?
 4. Should verification be mandatory before any document upload, or only before final submission?
 5. Is phase 1 allowed to use current password handling temporarily, or do we require password hashing before launch?
+6. Where exactly should tenant slug be resolved on the backend — route, header, request body, or host/subdomain?
+7. Should applicant JWTs include `TenantId`, `TenantSlug`, or both?
+8. Which pieces of the current Hub-style tenant bootstrap need to be bypassed or replaced for public applicant endpoints?
 
 ---
 
@@ -421,5 +518,8 @@ These need product decisions before implementation:
 - **Admin visibility of partials:** yes
 - **Verification before uploads:** yes
 - **Password hashing before launch:** yes, before production launch
+- **Tenant resolution source:** route-based `tenantSlug` is the cleanest default
+- **JWT tenant claims:** include both `TenantId` and `TenantSlug` if possible
+- **Hub-style bootstrap for applicant endpoints:** bypass it for public applicant entry, then switch to JWT tenant context after auth
 
 That keeps phase 1 simple without painting us into a corner.
